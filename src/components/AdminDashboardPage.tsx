@@ -21,8 +21,9 @@ import {
 import { PRODUCT_FAMILIES } from '../data/catalog';
 import { BLOG_POSTS } from '../data/blogPosts';
 import {
-  ADMIN_EMAIL,
+  MASKED_ADMIN_EMAIL,
   isAuthorizedAdmin,
+  maskEmailAddress,
   removeBlogPost,
   removeProduct,
   removeSeoSetting,
@@ -154,8 +155,9 @@ export function AdminDashboardPage({
   useEffect(() => {
     if (!authReady || !user) return;
     if (!isAuthorizedAdmin(user)) {
+      const attempted = user.email ? maskEmailAddress(user.email) : 'unknown account';
       setAuthError(
-        `Access denied for ${user.email || 'unknown account'}. Only ${ADMIN_EMAIL} is permitted to manage Yi Lai CMS data.`
+        `Access denied for ${attempted}. Only ${MASKED_ADMIN_EMAIL} is permitted to manage Yi Lai CMS data.`
       );
       void signOutAdmin();
     } else {
@@ -217,8 +219,9 @@ export function AdminDashboardPage({
     try {
       const signedInUser = await signInAdminWithGoogle();
       if (!isAuthorizedAdmin(signedInUser)) {
+        const attempted = signedInUser.email ? maskEmailAddress(signedInUser.email) : 'this account';
         setAuthError(
-          `Access denied for ${signedInUser.email || 'this account'}. Only ${ADMIN_EMAIL} can log in.`
+          `Access denied for ${attempted}. Only ${MASKED_ADMIN_EMAIL} can log in.`
         );
         await signOutAdmin();
       }
@@ -609,7 +612,7 @@ export function AdminDashboardPage({
               <div className="bg-[var(--bg)] border border-[var(--line)] rounded p-4 text-xs font-mono-spec text-[var(--muted)] space-y-1">
                 <div className="text-[var(--blue)] uppercase tracking-wider">Owner Access Policy</div>
                 <div>
-                  Only verified Google account <strong className="text-[var(--ink)]">{ADMIN_EMAIL}</strong> is authorized by Firestore Security Rules.
+                  Only verified Google account <strong className="text-[var(--ink)]">{MASKED_ADMIN_EMAIL}</strong> is authorized by Firestore Security Rules.
                 </div>
               </div>
 
@@ -664,7 +667,7 @@ export function AdminDashboardPage({
                 className="font-mono-spec text-xs text-[var(--ink)] bg-[var(--surface)] border border-[var(--line)] rounded px-3 py-1.5 flex items-center gap-2"
               >
                 <Check className="w-3.5 h-3.5 text-[#138A36] dark:text-[#4ade80]" aria-hidden="true" />
-                <span>{user?.email}</span>
+                <span>{user?.email ? maskEmailAddress(user.email) : MASKED_ADMIN_EMAIL}</span>
               </div>
 
               <button

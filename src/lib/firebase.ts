@@ -27,6 +27,20 @@ import type { ProductCategoryId } from '../data/catalog';
 
 export const ADMIN_EMAIL = 'andrewandrre88@gmail.com';
 
+export function maskEmailAddress(email: string): string {
+  const trimmed = email.trim();
+  const atIdx = trimmed.indexOf('@');
+  if (atIdx <= 0) return '******';
+  const local = trimmed.slice(0, atIdx);
+  const domain = trimmed.slice(atIdx + 1);
+  const dotIdx = domain.lastIndexOf('.');
+  const visibleLocal = local.slice(0, Math.min(2, local.length));
+  const tld = dotIdx > 0 ? domain.slice(dotIdx) : '';
+  return `${visibleLocal}******@******${tld}`;
+}
+
+export const MASKED_ADMIN_EMAIL = maskEmailAddress(ADMIN_EMAIL);
+
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
