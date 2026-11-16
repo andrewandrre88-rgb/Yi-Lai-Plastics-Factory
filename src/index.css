@@ -1,0 +1,178 @@
+@import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@layer base {
+  :root {
+    --bg: #f2f5fa;
+    --surface: #ffffff;
+    --ink: #0c1838;
+    --muted: #54607f;
+    --blue: #1648c9;
+    --red: #d92b25;
+    --line: #d3dbea;
+    --mist: #1648c9;
+    --btn-ink: #ffffff;
+
+    --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+    --font-body: "Onest", "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a1124;
+      --surface: #111a35;
+      --ink: #eaf0ff;
+      --muted: #9aa8cc;
+      --blue: #6490ff;
+      --red: #ff5e52;
+      --line: #27335a;
+      --mist: #9dbbff;
+      --btn-ink: #0a1124;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0a1124;
+    --surface: #111a35;
+    --ink: #eaf0ff;
+    --muted: #9aa8cc;
+    --blue: #6490ff;
+    --red: #ff5e52;
+    --line: #27335a;
+    --mist: #9dbbff;
+    --btn-ink: #0a1124;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  [dir="rtl"] body {
+    --font-display: "Tajawal", "Big Shoulders Display", Arial, sans-serif;
+    --font-body: "Tajawal", "Onest", Arial, sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--red);
+    outline-offset: 2px;
+  }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono-spec {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.grid-blueprint {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
+}
+
+.hero-radial-fade::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 30% 40%,
+    var(--bg) 0%,
+    var(--bg) 35%,
+    transparent 85%
+  );
+  opacity: 0.92;
+}
+
+.yl-product-card {
+  --part: var(--blue);
+  --part2: var(--red);
+  transition: background-color 0.15s ease;
+}
+
+.yl-product-card:hover {
+  background-color: color-mix(in srgb, var(--blue) 6%, var(--surface));
+}
+
+.yl-trigger-arm {
+  transition: transform 0.13s cubic-bezier(0.3, 0.9, 0.4, 1);
+  transform-origin: 110px 150px;
+}
+
+.yl-trigger-arm.is-pulled {
+  transform: rotate(-14deg);
+}
+
+.yl-steps {
+  counter-reset: yl-step;
+  border-top: 2px solid var(--ink);
+}
+
+.yl-steps > li {
+  position: relative;
+  list-style: none;
+}
+
+.yl-steps > li::before {
+  counter-increment: yl-step;
+  content: "0" counter(yl-step);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--red);
+  display: block;
+  margin-bottom: 14px;
+}
+
+.yl-steps > li::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--red);
+}
+
+[dir="rtl"] .yl-steps > li::after {
+  left: auto;
+  right: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .yl-trigger-arm {
+    transition: none;
+  }
+}

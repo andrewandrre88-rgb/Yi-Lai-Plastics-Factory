@@ -1,0 +1,6 @@
+{
+  "name": "Yi Lai Plastics Industry",
+  "description": "B2B manufacturing showcase and quote request portal for Yi Lai Plastics Industry — trigger sprayers, lotion pumps, fine mist sprayers, foam pumps, and bottle caps in Yuyao, Ningbo, China.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

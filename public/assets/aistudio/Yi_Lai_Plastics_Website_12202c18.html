@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yi Lai Plastics Website</title>
+<meta name="description" content="Yi Lai Plastics Industry manufactures trigger sprayers, lotion pumps, fine mist sprayers, foam pumps and bottle caps in Yuyao, Ningbo, China.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=Onest:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: an engineering drawing sheet. Faint grid, dimension callouts, mono spec labels,
+   one loud moment: a sprayer in the hero that really sprays across the headline. */
+:root{
+  --bg:#F2F5FA; --surface:#FFFFFF; --ink:#0C1838; --muted:#54607F;
+  --blue:#1648C9; --red:#D92B25; --line:#D3DBEA; --mist:#1648C9;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Onest","Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --wrap:1180px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1124; --surface:#111A35; --ink:#EAF0FF; --muted:#9AA8CC;
+    --blue:#6490FF; --red:#FF5E52; --line:#27335A; --mist:#9DBBFF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1124; --surface:#111A35; --ink:#EAF0FF; --muted:#9AA8CC;
+  --blue:#6490FF; --red:#FF5E52; --line:#27335A; --mist:#9DBBFF;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img,svg{max-width:100%}
+:focus-visible{outline:3px solid var(--red);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;line-height:.92;margin:0;text-wrap:balance;letter-spacing:.005em}
+h2{font-size:clamp(44px,6.4vw,84px);font-weight:900}
+h3{font-size:30px;font-weight:700;line-height:1}
+p{margin:0}
+.lede{max-width:58ch;color:var(--muted);font-size:18px}
+
+/* header */
+header.top{border-bottom:1px solid var(--line);background:var(--bg)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:14px;padding-bottom:14px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+.brand .mark{width:38px;height:38px;flex:none}
+.brand b{font-family:var(--display);font-weight:900;font-size:26px;text-transform:uppercase;line-height:1;display:block}
+.brand small{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-top:2px}
+nav{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+nav a{text-decoration:none;font-weight:500;font-size:15px}
+nav a:hover{color:var(--blue)}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--blue);color:#fff;border:0;border-radius:4px;padding:13px 20px;font:600 15px var(--body);text-decoration:none;cursor:pointer;transition:transform .12s ease,background .12s ease}
+:root[data-theme="dark"] .btn{color:#0A1124}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#0A1124}}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+.btn.red{background:var(--red)}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+:root[data-theme="dark"] .btn.ghost{color:var(--ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.ghost{color:var(--ink)}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:48px 48px;background-position:-1px -1px}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 30% 40%,var(--bg) 0%,var(--bg) 35%,transparent 85%);opacity:.92}
+#mist{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hero .wrap{position:relative;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:24px;align-items:center;padding-top:56px;padding-bottom:56px}
+h1{font-size:clamp(68px,12.2vw,176px);font-weight:900;margin:14px 0 22px}
+h1 em{font-style:normal;color:var(--red)}
+.hero .lede{color:var(--ink)}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.rig{position:relative;justify-self:center;width:min(100%,360px)}
+.rig svg{display:block;width:100%;height:auto;cursor:pointer;overflow:visible}
+#trigger{transition:transform .13s cubic-bezier(.3,.9,.4,1);transform-origin:110px 150px}
+#trigger.pull{transform:rotate(-14deg)}
+.rig .press{position:absolute;left:0;bottom:8%;}
+.dim{font-family:var(--mono);font-size:11px;fill:var(--muted);letter-spacing:.06em}
+.dimline{stroke:var(--muted);stroke-width:1;fill:none}
+
+/* sections */
+section{padding:88px 0}
+.head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:end;margin-bottom:44px}
+.head .mono{display:block;margin-bottom:12px}
+
+/* products */
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);background:var(--surface)}
+.card{padding:26px 26px 24px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;align-content:start;--part:var(--blue);--part2:var(--red);transition:background .15s ease}
+.card:nth-child(3n){border-right:0}
+.card:nth-last-child(-n+3){border-bottom:0}
+.card:hover{background:color-mix(in srgb,var(--blue) 6%,var(--surface))}
+.card svg{width:96px;height:128px}
+.card p{color:var(--muted);font-size:15.5px;margin-top:8px}
+.spec{list-style:none;margin:14px 0 0;padding:0;font-family:var(--mono);font-size:12px;color:var(--ink)}
+.spec li{display:flex;gap:10px;padding:5px 0;border-top:1px dashed var(--line)}
+.spec span:first-child{color:var(--muted);flex:0 0 52px;text-transform:uppercase;letter-spacing:.06em}
+.note{margin-top:16px;font-size:14px;color:var(--muted)}
+
+/* factory */
+.factory{background:var(--ink);color:var(--bg)}
+.factory .mono,.factory .lede{color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+.plate{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid color-mix(in srgb,var(--bg) 25%,var(--ink))}
+.plate div{padding:26px 22px 6px 0;border-right:1px solid color-mix(in srgb,var(--bg) 25%,var(--ink));padding-left:22px}
+.plate div:first-child{padding-left:0}
+.plate div:last-child{border-right:0}
+.plate b{font-family:var(--display);font-weight:900;font-size:clamp(64px,9vw,128px);line-height:.85;display:block;font-variant-numeric:tabular-nums}
+.plate b i{font-style:normal;color:var(--red)}
+.plate span{font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;display:block;margin-top:10px;color:color-mix(in srgb,var(--bg) 70%,var(--ink))}
+
+/* process */
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;counter-reset:s;border-top:2px solid var(--ink)}
+.steps li{list-style:none;padding:22px 22px 0 0;position:relative}
+.steps{margin:0;padding:0}
+.steps li::before{counter-increment:s;content:"0" counter(s);font-family:var(--mono);font-size:13px;color:var(--red);display:block;margin-bottom:14px}
+.steps li::after{content:"";position:absolute;top:-7px;left:0;width:12px;height:12px;border-radius:50%;background:var(--red)}
+.steps p{color:var(--muted);font-size:15.5px;margin-top:8px;max-width:30ch}
+
+/* inquiry */
+.inq{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:0;border:1px solid var(--line);background:var(--surface)}
+form{padding:30px;display:grid;grid-template-columns:1fr 1fr;gap:18px;align-content:start}
+.f{display:grid;gap:6px}
+.f.full{grid-column:1/-1}
+label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:11px 12px;width:100%}
+textarea{min-height:84px;resize:vertical}
+input[type=color]{padding:3px;height:46px;cursor:pointer}
+.colorrow{display:grid;grid-template-columns:64px 1fr;gap:10px}
+.out{border-left:1px solid var(--line);padding:30px;display:grid;gap:18px;align-content:start}
+.preview{display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;align-items:center;--part:var(--blue);--part2:var(--red)}
+.preview svg{width:110px;height:146px}
+.preview b{font-family:var(--display);font-size:34px;font-weight:900;text-transform:uppercase;line-height:1;display:block}
+#msg{font-family:var(--mono);font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border:1px dashed var(--line);border-radius:4px;padding:16px;margin:0;color:var(--ink)}
+.out-actions{display:flex;gap:10px;flex-wrap:wrap}
+#status{font-size:14px;color:var(--muted);min-height:1.4em}
+.mail{font-family:var(--mono);font-size:14px}
+
+footer{border-top:1px solid var(--line);padding:34px 0 46px}
+footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;font-size:14.5px;color:var(--muted)}
+footer b{color:var(--ink);font-weight:600}
+
+@media (max-width:900px){
+  .hero .wrap{grid-template-columns:1fr}
+  .rig{width:min(70%,280px)}
+  .head{grid-template-columns:1fr;gap:16px}
+  .grid{grid-template-columns:1fr 1fr}
+  .card:nth-child(3n){border-right:1px solid var(--line)}
+  .card:nth-child(2n){border-right:0}
+  .card:nth-last-child(-n+3){border-bottom:1px solid var(--line)}
+  .card:nth-last-child(-n+2){border-bottom:0}
+  .plate{grid-template-columns:1fr 1fr}
+  .plate div:nth-child(2){border-right:0}
+  .plate div:nth-child(3){padding-left:0}
+  .steps{grid-template-columns:1fr 1fr;row-gap:28px}
+  .inq{grid-template-columns:1fr}
+  .out{border-left:0;border-top:1px solid var(--line)}
+}
+@media (max-width:560px){
+  section{padding:60px 0}
+  .wrap{padding:0 18px}
+  nav a:not(.btn){display:none}
+  .grid{grid-template-columns:1fr}
+  .card,.card:nth-child(n){border-right:0;border-bottom:1px solid var(--line)}
+  .card:last-child{border-bottom:0}
+  form{grid-template-columns:1fr;padding:20px}
+  .out{padding:20px}
+  .steps{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  #trigger,.btn{transition:none}
+}
+</style>
+</head>
+<body>
+
+<!-- product drawings, reused in the cards and the inquiry preview -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="p-trigger" viewBox="0 0 120 160">
+    <rect x="14" y="30" width="14" height="14" rx="2" fill="var(--part2)"/>
+    <path d="M28 26H78Q92 26 92 40V62H64V48H28Z" fill="var(--part)"/>
+    <path d="M34 48H46L54 84Q55 89 50 89H47Q40 68 34 56Z" fill="var(--part2)"/>
+    <rect x="64" y="62" width="28" height="8" fill="var(--ink)"/>
+    <rect x="58" y="70" width="40" height="20" rx="2" fill="var(--part)"/>
+    <path d="M66 70V90M74 70V90M82 70V90M90 70V90" stroke="var(--surface)" stroke-width="1.5" opacity=".5"/>
+    <line x1="78" y1="90" x2="78" y2="154" stroke="var(--ink)" stroke-width="2"/>
+  </symbol>
+  <symbol id="p-lotion" viewBox="0 0 120 160">
+    <path d="M22 34Q22 22 34 22H80Q88 22 88 30V44H62V34H30V40H22Z" fill="var(--part)"/>
+    <rect x="68" y="44" width="10" height="14" fill="var(--ink)"/>
+    <rect x="54" y="58" width="38" height="8" rx="1" fill="var(--part2)"/>
+    <rect x="50" y="66" width="46" height="24" rx="2" fill="var(--part)"/>
+    <path d="M58 66V90M66 66V90M74 66V90M82 66V90M90 66V90" stroke="var(--surface)" stroke-width="1.5" opacity=".5"/>
+    <line x1="73" y1="90" x2="73" y2="154" stroke="var(--ink)" stroke-width="2"/>
+  </symbol>
+  <symbol id="p-mist" viewBox="0 0 120 160">
+    <circle cx="38" cy="34" r="2.5" fill="var(--part2)"/><circle cx="28" cy="28" r="2" fill="var(--part2)"/><circle cx="27" cy="40" r="2" fill="var(--part2)"/><circle cx="17" cy="34" r="1.5" fill="var(--part2)"/>
+    <rect x="50" y="24" width="26" height="20" rx="4" fill="var(--part)"/>
+    <circle cx="51" cy="34" r="2" fill="var(--ink)"/>
+    <rect x="60" y="44" width="6" height="10" fill="var(--ink)"/>
+    <rect x="48" y="54" width="30" height="6" rx="1" fill="var(--part2)"/>
+    <rect x="46" y="60" width="34" height="24" rx="2" fill="var(--part)"/>
+    <path d="M54 60V84M63 60V84M72 60V84" stroke="var(--surface)" stroke-width="1.5" opacity=".5"/>
+    <line x1="63" y1="84" x2="63" y2="154" stroke="var(--ink)" stroke-width="2"/>
+  </symbol>
+  <symbol id="p-foam" viewBox="0 0 120 160">
+    <path d="M20 36Q20 22 34 22H80Q90 22 90 32V50H58V38H30V44H20Z" fill="var(--part)"/>
+    <rect x="62" y="50" width="24" height="10" fill="var(--ink)"/>
+    <rect x="42" y="60" width="64" height="8" rx="1" fill="var(--part2)"/>
+    <rect x="38" y="68" width="72" height="26" rx="3" fill="var(--part)"/>
+    <path d="M48 68V94M58 68V94M68 68V94M78 68V94M88 68V94M98 68V94" stroke="var(--surface)" stroke-width="1.5" opacity=".5"/>
+    <line x1="74" y1="94" x2="74" y2="154" stroke="var(--ink)" stroke-width="2"/>
+  </symbol>
+  <symbol id="p-cap" viewBox="0 0 120 160">
+    <rect x="28" y="38" width="64" height="16" rx="5" fill="var(--part2)" transform="rotate(-32 92 66)"/>
+    <rect x="54" y="62" width="12" height="8" fill="var(--ink)"/>
+    <rect x="28" y="70" width="64" height="52" rx="5" fill="var(--part)"/>
+    <path d="M38 80V122M48 80V122M58 80V122M68 80V122M78 80V122" stroke="var(--surface)" stroke-width="1.5" opacity=".5"/>
+  </symbol>
+  <symbol id="p-other" viewBox="0 0 120 160">
+    <rect x="26" y="30" width="68" height="100" rx="8" fill="none" stroke="var(--part)" stroke-width="2.5" stroke-dasharray="7 6"/>
+    <path d="M60 62V98M42 80H78" stroke="var(--part2)" stroke-width="5" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Yi Lai Plastics Industry">
+      <svg class="mark" viewBox="0 0 38 38" aria-hidden="true"><rect width="38" height="38" rx="4" fill="var(--blue)"/><path d="M9 9l10 12L29 9" fill="none" stroke="#fff" stroke-width="4.5"/><rect x="16.7" y="20" width="4.6" height="10" fill="var(--red)"/></svg>
+      <span><b>Yi Lai Plastics</b><small>Yuyao · Ningbo · China</small></span>
+    </a>
+    <nav aria-label="Main">
+      <a href="#products">Products</a>
+      <a href="#factory">Factory</a>
+      <a href="#process">Process</a>
+      <a class="btn" href="#inquiry">Request a quote</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<div class="hero">
+  <canvas id="mist" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div>
+      <span class="mono">Dispensing pumps, sprayers and closures · factory direct</span>
+      <h1>Every press, the same <em>dose.</em></h1>
+      <p class="lede">Yi Lai Plastics Industry moulds and assembles trigger sprayers, lotion pumps, fine mist sprayers, foam pumps and bottle caps, in your neck size, your tube length and your colour.</p>
+      <div class="hero-actions">
+        <a class="btn red" href="#inquiry">Build your inquiry</a>
+        <a class="btn ghost" href="#products">See the range</a>
+      </div>
+    </div>
+
+    <div class="rig">
+      <svg id="sprayer" viewBox="0 0 380 470" role="img" aria-label="Trigger sprayer drawing. Press it to spray.">
+        <!-- your bottle -->
+        <path d="M176 272Q112 292 112 356V470M284 272Q348 292 348 356V470" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6 6"/>
+        <line x1="230" y1="272" x2="230" y2="452" stroke="var(--ink)" stroke-width="5"/>
+        <!-- head -->
+        <rect x="40" y="96" width="46" height="40" rx="6" fill="var(--red)"/>
+        <circle id="nozzle" cx="40" cy="116" r="3" fill="var(--ink)"/>
+        <path d="M84 82H228Q272 82 272 126V190H190V150H84Z" fill="var(--blue)"/>
+        <path id="trigger" d="M96 150H132L152 252Q154 264 142 264H133Q114 204 96 172Z" fill="var(--red)"/>
+        <rect x="190" y="190" width="82" height="26" fill="var(--ink)"/>
+        <rect x="176" y="216" width="108" height="56" rx="6" fill="var(--blue)"/>
+        <path d="M192 216V272M208 216V272M224 216V272M240 216V272M256 216V272M272 216V272" stroke="var(--bg)" stroke-width="2" opacity=".45"/>
+        <!-- dimension callouts -->
+        <path class="dimline" d="M176 60H284M176 54V66M284 54V66"/>
+        <text class="dim" x="230" y="48" text-anchor="middle">NECK 28/410</text>
+        <path class="dimline" d="M366 272V452M360 272H372M360 452H372"/>
+        <text class="dim" x="356" y="366" text-anchor="end">TUBE CUT</text>
+        <text class="dim" x="356" y="381" text-anchor="end">TO ORDER</text>
+        <text class="dim" x="130" y="440" text-anchor="start">YOUR BOTTLE</text>
+      </svg>
+      <button class="btn press" id="press" type="button">Press the trigger</button>
+    </div>
+  </div>
+</div>
+
+<section id="products">
+  <div class="wrap">
+    <div class="head">
+      <div><span class="mono">The range</span><h2>What we mould</h2></div>
+      <p class="lede">Each family comes in the standard neck finishes below. Tell us your bottle and what goes in it, and we will match the pump, the output and the dip tube.</p>
+    </div>
+    <div class="grid">
+      <article class="card">
+        <svg viewBox="0 0 120 160" aria-hidden="true"><use href="#p-trigger"/></svg>
+        <div><h3>Trigger sprayers</h3><p>Household cleaners, garden care, car care.</p>
+          <ul class="spec"><li><span>Neck</span><span>28/400 · 28/410 · 28/415</span></li><li><span>Nozzle</span><span>Spray · stream · foam</span></li></ul></div>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 120 160" aria-hidden="true"><use href="#p-lotion"/></svg>
+        <div><h3>Lotion pumps</h3><p>Hand soap, shampoo, body lotion, sanitiser.</p>
+          <ul class="spec"><li><span>Neck</span><span>24/410 · 28/410</span></li><li><span>Lock</span><span>Screw down · clip</span></li></ul></div>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 120 160" aria-hidden="true"><use href="#p-mist"/></svg>
+        <div><h3>Fine mist sprayers</h3><p>Perfume, toner, hair care, room spray.</p>
+          <ul class="spec"><li><span>Neck</span><span>18/410 · 20/410 · 24/410</span></li><li><span>Cap</span><span>Full or half overcap</span></li></ul></div>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 120 160" aria-hidden="true"><use href="#p-foam"/></svg>
+        <div><h3>Foam pumps</h3><p>Foaming hand wash, facial cleanser, mousse.</p>
+          <ul class="spec"><li><span>Neck</span><span>40/410 · 43/410</span></li><li><span>Fit</span><span>With or without overcap</span></li></ul></div>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 120 160" aria-hidden="true"><use href="#p-cap"/></svg>
+        <div><h3>Bottle caps</h3><p>Flip top, disc top and screw caps.</p>
+          <ul class="spec"><li><span>Neck</span><span>20/410 · 24/410 · 28/410</span></li><li><span>Finish</span><span>Smooth or ribbed</span></li></ul></div>
+      </article>
+      <article class="card">
+        <svg viewBox="0 0 120 160" aria-hidden="true"><use href="#p-other"/></svg>
+        <div><h3>And many more</h3><p>Need a different dispenser or closure? Send a sample, a drawing or a photo and we will tell you what we can make.</p></div>
+      </article>
+    </div>
+    <p class="note">Neck finish reads as diameter in millimetres / thread style. A 28/410 closure fits a 28 mm neck with a 410 thread.</p>
+  </div>
+</section>
+
+<section class="factory" id="factory">
+  <div class="wrap">
+    <div class="head">
+      <div><span class="mono">The factory</span><h2>Built in Yuyao, Ningbo</h2></div>
+      <p class="lede">We make the parts and put them together under one roof in Yuyao, Zhejiang. Moulding and assembly sit side by side, so a change to your order reaches the line the same day.</p>
+    </div>
+    <div class="plate">
+      <div><b>15<i>+</i></b><span>Years in the industry</span></div>
+      <div><b>200<i>+</i></b><span>Employees</span></div>
+      <div><b>65<i>+</i></b><span>Injection machines</span></div>
+      <div><b>13<i>+</i></b><span>Automatic production lines</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="process">
+  <div class="wrap">
+    <div class="head">
+      <div><span class="mono">From resin to carton</span><h2>How an order runs</h2></div>
+      <p class="lede">Four stages, all in the same plant.</p>
+    </div>
+    <ol class="steps">
+      <li><h3>Mould</h3><p>Injection machines form the actuator, closure, housing and piston in your colour.</p></li>
+      <li><h3>Assemble</h3><p>Automatic lines fit springs, gaskets and dip tubes, cut to your bottle height.</p></li>
+      <li><h3>Check</h3><p>Pumps are pressed and checked for output and leaks before packing.</p></li>
+      <li><h3>Ship</h3><p>Cartons are packed for export and leave through Ningbo port.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section id="inquiry" style="padding-top:0">
+  <div class="wrap">
+    <div class="head">
+      <div><span class="mono">Request a quote</span><h2>Build your inquiry</h2></div>
+      <p class="lede">Pick the product and colour. We write the message for you. Copy it, or open it in your email app, and send it to the factory.</p>
+    </div>
+    <div class="inq">
+      <form id="form" novalidate>
+        <div class="f"><label for="product">Product</label>
+          <select id="product">
+            <option value="trigger">Trigger sprayer</option>
+            <option value="lotion">Lotion pump</option>
+            <option value="mist">Fine mist sprayer</option>
+            <option value="foam">Foam pump</option>
+            <option value="cap">Bottle cap</option>
+            <option value="other">Something else</option>
+          </select></div>
+        <div class="f"><label for="neck">Neck finish</label><select id="neck"></select></div>
+        <div class="f"><label for="qty">Quantity (pcs)</label><input id="qty" type="number" min="0" step="1000" value="10000" inputmode="numeric"></div>
+        <div class="f"><label for="colour">Colour</label>
+          <div class="colorrow"><input id="colour" type="color" value="#1648c9" aria-label="Pick a colour"><input id="colourref" type="text" placeholder="Pantone or reference (optional)" aria-label="Colour reference"></div></div>
+        <div class="f"><label for="company">Your name and company</label><input id="company" type="text" autocomplete="organization" placeholder="Name, company"></div>
+        <div class="f"><label for="country">Ship to (country)</label><input id="country" type="text" autocomplete="country-name" placeholder="Country"></div>
+        <div class="f full"><label for="notes">What goes in the bottle, and anything else</label><textarea id="notes" placeholder="Liquid, bottle size, tube length, printing, packing"></textarea></div>
+      </form>
+      <div class="out">
+        <div class="preview" id="preview">
+          <svg viewBox="0 0 120 160" aria-hidden="true"><use id="puse" href="#p-trigger"/></svg>
+          <div><span class="mono">Your selection</span><b id="ptitle">Trigger sprayer</b><span class="mono" id="pneck">28/410</span></div>
+        </div>
+        <pre id="msg" aria-live="polite"></pre>
+        <div class="out-actions">
+          <button class="btn" id="copy" type="button">Copy inquiry</button>
+          <a class="btn ghost" id="mailto" href="mailto:yilaiplastics@gmail.com">Open in email</a>
+        </div>
+        <div id="status" role="status"></div>
+        <div><span class="mono">Send to</span><br><span class="mail">yilaiplastics@gmail.com</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><b>Yi Lai Plastics Industry</b><br>Yuyao, Ningbo, Zhejiang, China</div>
+    <div>Trigger sprayers · Lotion pumps · Fine mist sprayers<br>Foam pumps · Bottle caps</div>
+    <div><b>Email</b><br>yilaiplastics@gmail.com</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // ---------- hero mist ----------
+  var hero=document.querySelector('.hero'), cv=document.getElementById('mist'), ctx=cv.getContext('2d');
+  var trig=document.getElementById('trigger'), nozzle=document.getElementById('nozzle');
+  var parts=[], running=false, W=0, H=0;
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function size(){
+    var r=hero.getBoundingClientRect(), d=Math.min(window.devicePixelRatio||1,2);
+    W=r.width; H=r.height; cv.width=Math.round(W*d); cv.height=Math.round(H*d); ctx.setTransform(d,0,0,d,0,0);
+  }
+  function origin(){
+    var h=hero.getBoundingClientRect(), n=nozzle.getBoundingClientRect();
+    return {x:n.left-h.left, y:n.top-h.top+n.height/2};
+  }
+  function emit(n){
+    var o=origin(), k=Math.max(.55,Math.min(1.25,W/1100));
+    for(var i=0;i<n;i++){
+      var a=Math.PI+(Math.random()-.5)*.62, s=(5+Math.random()*10)*k;
+      parts.push({x:o.x,y:o.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:1+Math.random()*2.6,life:0,max:70+Math.random()*80});
+    }
+  }
+  function frame(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--mist').trim()||'#1648C9';
+    for(var i=parts.length-1;i>=0;i--){
+      var p=parts[i]; p.life++; p.vx*=.972; p.vy=p.vy*.972+.018; p.x+=p.vx; p.y+=p.vy; p.r+=.02;
+      if(p.life>p.max||p.x<-20){parts.splice(i,1);continue;}
+      ctx.globalAlpha=(1-p.life/p.max)*.5;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    if(parts.length){requestAnimationFrame(frame);}else{running=false;}
+  }
+  function press(){
+    trig.classList.add('pull');
+    setTimeout(function(){trig.classList.remove('pull');},240);
+    var n=0, t=setInterval(function(){emit(reduce?4:14); if(++n>9)clearInterval(t);},22);
+    if(!running){running=true;requestAnimationFrame(frame);}
+  }
+  size(); window.addEventListener('resize',size);
+  document.getElementById('press').addEventListener('click',press);
+  document.getElementById('sprayer').addEventListener('click',press);
+  if(!reduce){setTimeout(press,700);setTimeout(press,1250);}
+
+  // ---------- inquiry builder ----------
+  var P={
+    trigger:{name:'Trigger sprayer',sym:'#p-trigger',necks:['28/400','28/410','28/415']},
+    lotion:{name:'Lotion pump',sym:'#p-lotion',necks:['24/410','28/410']},
+    mist:{name:'Fine mist sprayer',sym:'#p-mist',necks:['18/410','20/410','24/410']},
+    foam:{name:'Foam pump',sym:'#p-foam',necks:['40/410','43/410']},
+    cap:{name:'Bottle cap',sym:'#p-cap',necks:['20/410','24/410','28/410']},
+    other:{name:'Something else',sym:'#p-other',necks:[]}
+  };
+  var $=function(id){return document.getElementById(id);};
+  var EMAIL='yilaiplastics@gmail.com';
+  function fillNecks(){
+    var p=P[$('product').value], s=$('neck'); s.innerHTML='';
+    p.necks.concat(['Not sure yet']).forEach(function(n,i){
+      var o=document.createElement('option'); o.textContent=n; s.appendChild(o);
+      if(n==='28/410'||n==='24/410'&&$('product').value==='mist') s.selectedIndex=i;
+    });
+  }
+  function build(){
+    var p=P[$('product').value], neck=$('neck').value, q=parseInt($('qty').value,10);
+    var col=$('colour').value.toUpperCase(), ref=$('colourref').value.trim();
+    $('puse').setAttribute('href',p.sym);
+    $('preview').style.setProperty('--part',$('colour').value);
+    $('ptitle').textContent=p.name; $('pneck').textContent=neck;
+    var lines=['Hello Yi Lai Plastics,','','Please quote the following:','',
+      'Product: '+p.name,
+      'Neck finish: '+neck,
+      'Quantity: '+(q>0?q.toLocaleString('en-US')+' pcs':'to be confirmed'),
+      'Colour: '+(ref?ref+' ('+col+')':col)];
+    if($('country').value.trim()) lines.push('Ship to: '+$('country').value.trim());
+    if($('notes').value.trim()) lines.push('Notes: '+$('notes').value.trim());
+    lines.push('','Please send price, lead time and sample availability.','');
+    lines.push($('company').value.trim()||'[Your name, company]');
+    var text=lines.join('\n');
+    $('msg').textContent=text;
+    $('mailto').href='mailto:'+EMAIL+'?subject='+encodeURIComponent('Inquiry: '+p.name+(p.necks.length?' '+neck:''))+'&body='+encodeURIComponent(text);
+    $('status').textContent='';
+  }
+  $('product').addEventListener('change',function(){fillNecks();build();});
+  $('form').addEventListener('input',build);
+  $('form').addEventListener('submit',function(e){e.preventDefault();});
+  $('copy').addEventListener('click',function(){
+    var text=$('msg').textContent;
+    function ok(){$('status').textContent='Copied. Paste it into an email to '+EMAIL+'.';}
+    function fail(){
+      var r=document.createRange(); r.selectNodeContents($('msg'));
+      var s=window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      $('status').textContent='The message is selected. Press Ctrl+C or Cmd+C to copy it.';
+    }
+    try{navigator.clipboard.writeText(text).then(ok,fail);}catch(e){fail();}
+  });
+  fillNecks(); build();
+})();
+</script>
+</body>
+</html>

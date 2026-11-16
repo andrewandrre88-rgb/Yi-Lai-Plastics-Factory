@@ -1,0 +1,231 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny all reads and writes unless explicitly matched below
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==================== GLOBAL PRIMITIVES ====================
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'andrewandrre88@gmail.com';
+    }
+
+    function isValidUrlOrPath(val) {
+      return val is string && val.size() <= 500 && (
+        val == ''
+        || val.matches('^/[a-zA-Z0-9_./\\-]+$')
+        || val.matches('^https://.*')
+      );
+    }
+
+    function isValidImageSource(val) {
+      return isValidUrlOrPath(val)
+        || (
+          val is string
+          && val.size() >= 30
+          && val.size() <= 350000
+          && val.split(';base64,').size() == 2
+          && val.split(';base64,')[0].matches('^data:image/(jpeg|jpg|png|webp)$')
+          && val.split(';base64,')[1].size() >= 8
+        );
+    }
+
+    function isValidImageList(imgs) {
+      return imgs is list
+        && imgs.size() <= 6
+        && (imgs.size() < 1 || isValidImageSource(imgs[0]))
+        && (imgs.size() < 2 || isValidImageSource(imgs[1]))
+        && (imgs.size() < 3 || isValidImageSource(imgs[2]))
+        && (imgs.size() < 4 || isValidImageSource(imgs[3]))
+        && (imgs.size() < 5 || isValidImageSource(imgs[4]))
+        && (imgs.size() < 6 || isValidImageSource(imgs[5]));
+    }
+
+    // ==================== VALIDATION BLUEPRINTS ====================
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+          'category', 'figCode', 'modelRange', 'title', 'uses',
+          'neckSizes', 'neckToConfirm', 'dosage', 'material', 'featureSpec',
+          'image', 'images', 'altText', 'quoteValue', 'published', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'category', 'figCode', 'modelRange', 'title', 'uses',
+          'neckSizes', 'neckToConfirm', 'dosage', 'material', 'featureSpec',
+          'image', 'images', 'altText', 'quoteValue', 'published', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.category in ['trigger', 'lotion', 'mist', 'foam', 'caps']
+        && data.figCode is string && data.figCode.size() >= 2 && data.figCode.size() <= 24
+        && data.modelRange is string && data.modelRange.size() >= 2 && data.modelRange.size() <= 64
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 120
+        && data.uses is string && data.uses.size() >= 4 && data.uses.size() <= 500
+        && data.neckSizes is string && data.neckSizes.size() >= 1 && data.neckSizes.size() <= 120
+        && data.neckToConfirm is bool
+        && data.dosage is string && data.dosage.size() >= 1 && data.dosage.size() <= 80
+        && data.material is string && data.material.size() >= 1 && data.material.size() <= 120
+        && data.featureSpec is string && data.featureSpec.size() >= 1 && data.featureSpec.size() <= 160
+        && isValidImageSource(data.image)
+        && isValidImageList(data.images)
+        && data.altText is string && data.altText.size() >= 2 && data.altText.size() <= 200
+        && data.quoteValue is string && data.quoteValue.size() >= 2 && data.quoteValue.size() <= 120
+        && data.published is bool
+        && isValidId(data.authorUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBlogPost(data) {
+      return data.keys().hasAll([
+          'index', 'refCode', 'category', 'title', 'summary', 'specTakeaway',
+          'paragraphs', 'relatedProduct', 'image', 'seoTitle', 'seoDescription',
+          'published', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'index', 'refCode', 'category', 'title', 'summary', 'specTakeaway',
+          'paragraphs', 'relatedProduct', 'image', 'seoTitle', 'seoDescription',
+          'published', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.index is string && data.index.size() >= 1 && data.index.size() <= 12
+        && data.refCode is string && data.refCode.size() >= 2 && data.refCode.size() <= 32
+        && data.category is string && data.category.size() >= 2 && data.category.size() <= 64
+        && data.title is string && data.title.size() >= 4 && data.title.size() <= 160
+        && data.summary is string && data.summary.size() >= 10 && data.summary.size() <= 400
+        && data.specTakeaway is string && data.specTakeaway.size() >= 2 && data.specTakeaway.size() <= 280
+        && data.paragraphs is list
+        && data.paragraphs.size() >= 1
+        && data.paragraphs.size() <= 20
+        && data.paragraphs[0] is string
+        && data.paragraphs[0].size() >= 1
+        && data.paragraphs[0].size() <= 4000
+        && data.relatedProduct is string && data.relatedProduct.size() >= 2 && data.relatedProduct.size() <= 120
+        && isValidImageSource(data.image)
+        && data.seoTitle is string && data.seoTitle.size() <= 120
+        && data.seoDescription is string && data.seoDescription.size() <= 240
+        && data.published is bool
+        && isValidId(data.authorUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSeoSetting(data) {
+      return data.keys().hasAll([
+          'pageKey', 'title', 'description', 'keywords', 'ogTitle', 'ogDescription',
+          'ogSiteName', 'ogImage', 'twitterCard', 'canonicalBaseUrl',
+          'schemaOrgName', 'schemaOrgDescription', 'isPublic',
+          'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'pageKey', 'title', 'description', 'keywords', 'ogTitle', 'ogDescription',
+          'ogSiteName', 'ogImage', 'twitterCard', 'canonicalBaseUrl',
+          'schemaOrgName', 'schemaOrgDescription', 'isPublic',
+          'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.pageKey in ['global', 'home', 'factory', 'use-cases', 'trigger-sprayers']
+        && data.title is string && data.title.size() >= 10 && data.title.size() <= 120
+        && data.description is string && data.description.size() >= 20 && data.description.size() <= 320
+        && data.keywords is string && data.keywords.size() <= 400
+        && data.ogTitle is string && data.ogTitle.size() <= 120
+        && data.ogDescription is string && data.ogDescription.size() <= 320
+        && data.ogSiteName is string && data.ogSiteName.size() >= 2 && data.ogSiteName.size() <= 80
+        && isValidUrlOrPath(data.ogImage)
+        && data.twitterCard in ['summary_large_image', 'summary']
+        && isValidUrlOrPath(data.canonicalBaseUrl)
+        && data.schemaOrgName is string && data.schemaOrgName.size() >= 2 && data.schemaOrgName.size() <= 120
+        && data.schemaOrgDescription is string && data.schemaOrgDescription.size() >= 10 && data.schemaOrgDescription.size() <= 400
+        && data.isPublic is bool
+        && isValidId(data.authorUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // ==================== COLLECTIONS ====================
+    match /products/{productId} {
+      allow get: if isValidId(productId) && (isAdmin() || (resource != null && existing().published == true));
+      allow list: if isAdmin() || existing().published == true;
+      allow create: if isAdmin()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'category', 'figCode', 'modelRange', 'title', 'uses',
+          'neckSizes', 'neckToConfirm', 'dosage', 'material', 'featureSpec',
+          'image', 'images', 'altText', 'quoteValue', 'published', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    match /blog_posts/{postId} {
+      allow get: if isValidId(postId) && (isAdmin() || (resource != null && existing().published == true));
+      allow list: if isAdmin() || existing().published == true;
+      allow create: if isAdmin()
+        && isValidId(postId)
+        && isValidBlogPost(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(postId)
+        && isValidBlogPost(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'index', 'refCode', 'category', 'title', 'summary', 'specTakeaway',
+          'paragraphs', 'relatedProduct', 'image', 'seoTitle', 'seoDescription',
+          'published', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(postId);
+    }
+
+    match /seo_settings/{settingId} {
+      allow get: if isValidId(settingId) && (isAdmin() || (resource != null && existing().isPublic == true));
+      allow list: if isAdmin() || existing().isPublic == true;
+      allow create: if isAdmin()
+        && isValidId(settingId)
+        && isValidSeoSetting(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(settingId)
+        && isValidSeoSetting(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'pageKey', 'title', 'description', 'keywords', 'ogTitle', 'ogDescription',
+          'ogSiteName', 'ogImage', 'twitterCard', 'canonicalBaseUrl',
+          'schemaOrgName', 'schemaOrgDescription', 'isPublic', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(settingId);
+    }
+  }
+}

@@ -1,0 +1,361 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Dispensing pump, sprayer, or closure product family entry managed by the factory admin.",
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": ["trigger", "lotion", "mist", "foam", "caps"],
+          "description": "Product category tab identifier."
+        },
+        "figCode": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 24,
+          "description": "Engineering figure reference code, e.g. FIG 1.8."
+        },
+        "modelRange": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "description": "Model number range, e.g. TS022 - TS028."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Display title of the product series."
+        },
+        "uses": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 500,
+          "description": "Typical packaging uses and industries."
+        },
+        "neckSizes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Compatible bottle neck finishes, e.g. 28/400 · 28/410."
+        },
+        "neckToConfirm": {
+          "type": "boolean",
+          "description": "True if neck sizes must be flagged TO CONFIRM."
+        },
+        "dosage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Output volume per stroke or closure type."
+        },
+        "material": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Resin and trim material specification."
+        },
+        "featureSpec": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Spray pattern, lock type, or key mechanical details."
+        },
+        "image": {
+          "type": "string",
+          "maxLength": 350000,
+          "description": "Primary image path, HTTPS URL, or compressed raster data URI for the product."
+        },
+        "images": {
+          "type": "array",
+          "description": "Gallery of up to 6 product images (paths, HTTPS URLs, or compressed raster data URIs)."
+        },
+        "altText": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 200,
+          "description": "SEO image alt description."
+        },
+        "quoteValue": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Pre-filled product string passed to the quote request form."
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Controls public visibility on the storefront."
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin who created the document."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "category",
+        "figCode",
+        "modelRange",
+        "title",
+        "uses",
+        "neckSizes",
+        "neckToConfirm",
+        "dosage",
+        "material",
+        "featureSpec",
+        "image",
+        "images",
+        "altText",
+        "quoteValue",
+        "published",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Technical packaging guide or factory update published to the Blog section and dedicated post route.",
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12,
+          "description": "Sequential guide index, e.g. 04."
+        },
+        "refCode": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 32,
+          "description": "Blueprint note code, e.g. NOTE 05.4."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "description": "Article category label."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 160,
+          "description": "Article headline."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 400,
+          "description": "Short summary shown on cards and header lead."
+        },
+        "specTakeaway": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 280,
+          "description": "Monospace technical spec takeaway bar."
+        },
+        "paragraphs": {
+          "type": "array",
+          "description": "Article body paragraphs (1 to 20 paragraphs)."
+        },
+        "relatedProduct": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Linked product series name for the sidebar quote CTA."
+        },
+        "image": {
+          "type": "string",
+          "maxLength": 350000,
+          "description": "Optional image URL, local asset path, or compressed raster data URI."
+        },
+        "seoTitle": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional SEO meta title override when reading this post."
+        },
+        "seoDescription": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Optional SEO meta description override when reading this post."
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Controls public visibility on the blog section."
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin who created the document."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "index",
+        "refCode",
+        "category",
+        "title",
+        "summary",
+        "specTakeaway",
+        "paragraphs",
+        "relatedProduct",
+        "image",
+        "seoTitle",
+        "seoDescription",
+        "published",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SeoSetting": {
+      "title": "SeoSetting",
+      "description": "Site-wide and route-specific SEO, OpenGraph, Twitter Card, and Schema.org JSON-LD metadata.",
+      "type": "object",
+      "properties": {
+        "pageKey": {
+          "type": "string",
+          "enum": ["global", "home", "factory", "use-cases", "trigger-sprayers"],
+          "description": "Target route key for metadata injection."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 120,
+          "description": "Document title and og:title."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 320,
+          "description": "Meta description and og:description."
+        },
+        "keywords": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "Comma-separated SEO keywords."
+        },
+        "ogTitle": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "OpenGraph title override."
+        },
+        "ogDescription": {
+          "type": "string",
+          "maxLength": 320,
+          "description": "OpenGraph description override."
+        },
+        "ogSiteName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "OpenGraph site_name tag."
+        },
+        "ogImage": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "OpenGraph social share card image URL."
+        },
+        "twitterCard": {
+          "type": "string",
+          "enum": ["summary_large_image", "summary"],
+          "description": "Twitter card layout format."
+        },
+        "canonicalBaseUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Optional explicit canonical domain override."
+        },
+        "schemaOrgName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120,
+          "description": "Schema.org Organization name."
+        },
+        "schemaOrgDescription": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 400,
+          "description": "Schema.org Organization description."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks SEO config readable by visitors."
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "pageKey",
+        "title",
+        "description",
+        "keywords",
+        "ogTitle",
+        "ogDescription",
+        "ogSiteName",
+        "ogImage",
+        "twitterCard",
+        "canonicalBaseUrl",
+        "schemaOrgName",
+        "schemaOrgDescription",
+        "isPublic",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Catalog product families published by the factory admin."
+    },
+    "/blog_posts/{postId}": {
+      "schema": { "$ref": "#/entities/BlogPost" },
+      "description": "Technical guides and blog posts managed by the factory admin."
+    },
+    "/seo_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SeoSetting" },
+      "description": "Dynamic SEO, OpenGraph, Twitter, and JSON-LD metadata records."
+    }
+  }
+}
