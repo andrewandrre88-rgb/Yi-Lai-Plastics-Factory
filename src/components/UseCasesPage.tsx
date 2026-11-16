@@ -1,20 +1,22 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { REAL_USE_CASES, type UseCaseItem } from '../data/useCases';
 import { LANG_LABELS, type LangCode } from '../i18n/translations';
+import type { CmsCatalogConfigDoc } from '../lib/firebase';
+import { CatalogLink } from './CatalogLink';
 
 interface UseCasesPageProps {
   lang: LangCode;
+  catalogConfig?: CmsCatalogConfigDoc | null;
   onChangeLang: (lang: LangCode) => void;
   onNavigateHomeSection: (sectionId?: string) => void;
   onQuoteUseCase: (useCase: UseCaseItem) => void;
   t: (key: string) => string;
 }
 
-const CATALOG_PDF_URL = '/assets/aistudio/Yi_Lai_Plastics_Industry_Factory_CATALOG_b3ed4e35.pdf';
-
 export function UseCasesPage({
   lang,
+  catalogConfig,
   onChangeLang,
   onNavigateHomeSection,
   onQuoteUseCase,
@@ -101,15 +103,11 @@ export function UseCasesPage({
               <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
             </button>
 
-            <a
-              href={CATALOG_PDF_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <CatalogLink
+              catalogConfig={catalogConfig}
+              defaultLabel={t('hero.cta2')}
               className="inline-flex items-center gap-2 bg-transparent text-[var(--ink)] ring-1 ring-inset ring-[var(--ink)] font-semibold text-sm sm:text-base px-5 py-3 rounded-[4px] hover:-translate-y-px transition-transform"
-            >
-              <FileText className="w-4 h-4" aria-hidden="true" />
-              <span>{t('hero.cta2')}</span>
-            </a>
+            />
           </div>
         </div>
       </section>

@@ -342,6 +342,137 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "SiteCatalogConfig": {
+      "title": "SiteCatalogConfig",
+      "description": "Active downloadable factory catalog PDF configuration managed by the admin.",
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["default", "url", "chunks"],
+          "description": "Catalog source mode: built-in static PDF, external HTTPS URL, or Firestore chunked PDF."
+        },
+        "buttonLabel": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Optional override label for catalog download buttons."
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Download filename shown to users."
+        },
+        "fileSizeBytes": {
+          "type": "integer",
+          "description": "Size of uploaded PDF file in bytes."
+        },
+        "pdfUrl": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Direct PDF path or HTTPS URL when mode is default or url."
+        },
+        "versionId": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Active chunk batch identifier."
+        },
+        "chunkCount": {
+          "type": "integer",
+          "description": "Total number of base64 chunks stored in catalog_chunks when mode is chunks."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks catalog config readable by visitors."
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "mode",
+        "buttonLabel",
+        "fileName",
+        "fileSizeBytes",
+        "pdfUrl",
+        "versionId",
+        "chunkCount",
+        "isPublic",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CatalogChunk": {
+      "title": "CatalogChunk",
+      "description": "Chunked Base64 PDF slice for admin-uploaded factory catalogs stored in Firestore.",
+      "type": "object",
+      "properties": {
+        "versionId": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Catalog upload version identifier."
+        },
+        "chunkIndex": {
+          "type": "integer",
+          "description": "Zero-based index of this PDF chunk."
+        },
+        "data": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 540000,
+          "description": "Base64-encoded slice of the PDF binary."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks catalog chunk readable when downloading the published PDF."
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "versionId",
+        "chunkIndex",
+        "data",
+        "isPublic",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -356,6 +487,14 @@
     "/seo_settings/{settingId}": {
       "schema": { "$ref": "#/entities/SeoSetting" },
       "description": "Dynamic SEO, OpenGraph, Twitter, and JSON-LD metadata records."
+    },
+    "/site_config/{configId}": {
+      "schema": { "$ref": "#/entities/SiteCatalogConfig" },
+      "description": "Site-wide configuration documents such as the active downloadable catalog PDF."
+    },
+    "/catalog_chunks/{chunkId}": {
+      "schema": { "$ref": "#/entities/CatalogChunk" },
+      "description": "Chunked binary slices for admin-uploaded factory catalog PDFs."
     }
   }
 }

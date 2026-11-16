@@ -158,6 +158,44 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidCatalogConfig(data) {
+      return data.keys().hasAll([
+          'mode', 'buttonLabel', 'fileName', 'fileSizeBytes', 'pdfUrl',
+          'versionId', 'chunkCount', 'isPublic', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'mode', 'buttonLabel', 'fileName', 'fileSizeBytes', 'pdfUrl',
+          'versionId', 'chunkCount', 'isPublic', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.mode in ['default', 'url', 'chunks']
+        && data.buttonLabel is string && data.buttonLabel.size() <= 80
+        && data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 160
+        && data.fileSizeBytes is int && data.fileSizeBytes >= 0 && data.fileSizeBytes <= 40000000
+        && isValidUrlOrPath(data.pdfUrl)
+        && isValidId(data.versionId) && data.versionId.size() <= 64
+        && data.chunkCount is int && data.chunkCount >= 0 && data.chunkCount <= 85
+        && data.isPublic is bool
+        && isValidId(data.authorUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCatalogChunk(data) {
+      return data.keys().hasAll([
+          'versionId', 'chunkIndex', 'data', 'isPublic', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'versionId', 'chunkIndex', 'data', 'isPublic', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.versionId) && data.versionId.size() <= 64
+        && data.chunkIndex is int && data.chunkIndex >= 0 && data.chunkIndex < 85
+        && data.data is string && data.data.size() >= 1 && data.data.size() <= 540000
+        && data.isPublic is bool
+        && isValidId(data.authorUid)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     // ==================== COLLECTIONS ====================
     match /products/{productId} {
       allow get: if isValidId(productId) && (isAdmin() || (resource != null && existing().published == true));
@@ -226,6 +264,49 @@ service cloud.firestore {
           'schemaOrgName', 'schemaOrgDescription', 'isPublic', 'updatedAt'
         ]);
       allow delete: if isAdmin() && isValidId(settingId);
+    }
+
+    match /site_config/{configId} {
+      allow get: if isValidId(configId) && (isAdmin() || (resource != null && existing().isPublic == true));
+      allow list: if isAdmin() || existing().isPublic == true;
+      allow create: if isAdmin()
+        && isValidId(configId)
+        && isValidCatalogConfig(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(configId)
+        && isValidCatalogConfig(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'mode', 'buttonLabel', 'fileName', 'fileSizeBytes', 'pdfUrl',
+          'versionId', 'chunkCount', 'isPublic', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(configId);
+    }
+
+    match /catalog_chunks/{chunkId} {
+      allow get: if isValidId(chunkId) && (isAdmin() || (resource != null && existing().isPublic == true));
+      allow list: if isAdmin() || existing().isPublic == true;
+      allow create: if isAdmin()
+        && isValidId(chunkId)
+        && isValidCatalogChunk(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(chunkId)
+        && isValidCatalogChunk(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'versionId', 'chunkIndex', 'data', 'isPublic', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(chunkId);
     }
   }
 }

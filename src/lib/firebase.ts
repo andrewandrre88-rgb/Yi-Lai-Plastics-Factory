@@ -195,6 +195,34 @@ export interface CmsSeoSettingDoc extends CmsSeoSettingInput {
   authorUid: string;
 }
 
+export type CatalogSourceMode = 'default' | 'url' | 'chunks';
+
+export interface CmsCatalogConfigDoc {
+  id: 'catalog';
+  mode: CatalogSourceMode;
+  buttonLabel: string;
+  fileName: string;
+  fileSizeBytes: number;
+  pdfUrl: string;
+  versionId: string;
+  chunkCount: number;
+  isPublic: boolean;
+  authorUid: string;
+}
+
+export interface CatalogUploadProgress {
+  stage: 'preparing' | 'uploading' | 'finalizing' | 'cleaning';
+  completedChunks: number;
+  totalChunks: number;
+  percent: number;
+}
+
+export const DEFAULT_CATALOG_PDF_URL =
+  '/assets/aistudio/Yi_Lai_Plastics_Industry_Factory_CATALOG_b3ed4e35.pdf';
+export const DEFAULT_CATALOG_FILE_NAME = 'Yi_Lai_Plastics_Industry_Factory_CATALOG.pdf';
+export const MAX_CATALOG_PDF_BYTES = 31 * 1024 * 1024; // 31 MB max (~85 chunks * 375 KB)
+const CATALOG_CHUNK_RAW_BYTES = 375000; // exact multiple of 3 -> 500,000 base64 chars
+
 // ==================== DEFENSIVE SANITIZERS ====================
 const VALID_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 
@@ -360,6 +388,35 @@ export function subscribePublicSeoSettings(
         };
       }
       onData(map);
+    },
+    (error) => {
+      try {
+        handleFirestoreError(error, OperationType.LIST, path);
+      } catch (wrapped) {
+        onError?.(wrapped as Error);
+      }
+    }
+  );
+}
+
+export function subscribePublicCatalogConfig(
+  onData: (config: CmsCatalogConfigDoc | null) => void,
+  onError?: (err: Error) => void
+): Unsubscribe {
+  const path = 'site_config';
+  const q = query(collection(db, path), where('isPublic', '==', true));
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const catalogDoc = snapshot.docs.find((d) => d.id === 'catalog');
+      if (!catalogDoc) {
+        onData(null);
+        return;
+      }
+      onData({
+        id: 'catalog',
+        ...(catalogDoc.data() as Omit<CmsCatalogConfigDoc, 'id'>),
+      });
     },
     (error) => {
       try {
@@ -626,3 +683,345 @@ export async function removeSeoSetting(settingId: SeoPageKey): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, docPath);
   }
 }
+
+// ==================== CATALOG PDF STORAGE & RE-UPLOAD ====================
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const sliceSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += sliceSize) {
+    const slice = bytes.subarray(i, i + sliceSize);
+    binary += String.fromCharCode(...slice);
+  }
+  return btoa(binary);
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+const catalogBlobCache = new Map<string, string>();
+
+export async function resolveCatalogBlobUrl(config: CmsCatalogConfigDoc): Promise<string> {
+  if (config.mode !== 'chunks' || config.chunkCount <= 0) {
+    return config.pdfUrl || DEFAULT_CATALOG_PDF_URL;
+  }
+
+  const cached = catalogBlobCache.get(config.versionId);
+  if (cached) return cached;
+
+  const chunkParts: Uint8Array[] = new Array(config.chunkCount);
+  const batchSize = 8;
+
+  for (let start = 0; start < config.chunkCount; start += batchSize) {
+    const indices: number[] = [];
+    for (let i = start; i < Math.min(start + batchSize, config.chunkCount); i += 1) {
+      indices.push(i);
+    }
+
+    await Promise.all(
+      indices.map(async (chunkIndex) => {
+        const chunkId = `${config.versionId}_${chunkIndex}`;
+        const chunkPath = `catalog_chunks/${chunkId}`;
+        try {
+          const snap = await getDoc(doc(db, 'catalog_chunks', chunkId));
+          if (!snap.exists()) {
+            throw new Error(`Missing catalog chunk ${chunkIndex + 1} of ${config.chunkCount}.`);
+          }
+          const rawData = snap.data() as { data?: string };
+          if (!rawData.data || typeof rawData.data !== 'string') {
+            throw new Error(`Invalid catalog chunk ${chunkIndex + 1}.`);
+          }
+          chunkParts[chunkIndex] = base64ToUint8Array(rawData.data);
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, chunkPath);
+        }
+      })
+    );
+  }
+
+  const blob = new Blob(chunkParts as BlobPart[], { type: 'application/pdf' });
+  const objectUrl = URL.createObjectURL(blob);
+  catalogBlobCache.set(config.versionId, objectUrl);
+  return objectUrl;
+}
+
+async function cleanupCatalogChunks(versionId: string, chunkCount: number): Promise<void> {
+  if (!versionId || chunkCount <= 0) return;
+  const batchSize = 10;
+  for (let start = 0; start < chunkCount; start += batchSize) {
+    const deletes: Promise<void>[] = [];
+    for (let i = start; i < Math.min(start + batchSize, chunkCount); i += 1) {
+      const chunkId = `${versionId}_${i}`;
+      deletes.push(deleteDoc(doc(db, 'catalog_chunks', chunkId)).catch(() => undefined));
+    }
+    await Promise.all(deletes);
+  }
+}
+
+async function upsertCatalogConfigDoc(payload: {
+  mode: CatalogSourceMode;
+  buttonLabel: string;
+  fileName: string;
+  fileSizeBytes: number;
+  pdfUrl: string;
+  versionId: string;
+  chunkCount: number;
+  authorUid: string;
+}): Promise<{ prevMode?: CatalogSourceMode; prevVersionId?: string; prevChunkCount?: number }> {
+  const docPath = 'site_config/catalog';
+  const docRef = doc(db, 'site_config', 'catalog');
+
+  let exists = false;
+  let prevMode: CatalogSourceMode | undefined;
+  let prevVersionId: string | undefined;
+  let prevChunkCount: number | undefined;
+
+  try {
+    const existingSnap = await getDoc(docRef);
+    exists = existingSnap.exists();
+    if (exists) {
+      const data = existingSnap.data() as Partial<CmsCatalogConfigDoc>;
+      prevMode = data.mode;
+      prevVersionId = data.versionId;
+      prevChunkCount = data.chunkCount;
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, docPath);
+  }
+
+  const mutablePayload = {
+    mode: payload.mode,
+    buttonLabel: clampStr(payload.buttonLabel, 80),
+    fileName: clampStr(payload.fileName, 160) || DEFAULT_CATALOG_FILE_NAME,
+    fileSizeBytes: Math.max(0, Math.min(40000000, Math.round(payload.fileSizeBytes))),
+    pdfUrl: payload.pdfUrl,
+    versionId: payload.versionId,
+    chunkCount: Math.max(0, Math.min(85, Math.round(payload.chunkCount))),
+    isPublic: true,
+  };
+
+  try {
+    if (exists) {
+      await updateDoc(docRef, {
+        ...mutablePayload,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      await setDoc(docRef, {
+        ...mutablePayload,
+        authorUid: payload.authorUid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, exists ? OperationType.UPDATE : OperationType.CREATE, docPath);
+  }
+
+  return { prevMode, prevVersionId, prevChunkCount };
+}
+
+export async function uploadCatalogPdfFile(
+  file: File,
+  buttonLabel: string,
+  onProgress?: (progress: CatalogUploadProgress) => void
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!isAuthorizedAdmin(user) || !user) {
+    throw new Error('Unauthorized: Admin sign-in required.');
+  }
+
+  const lowerName = file.name.toLowerCase();
+  const isPdfMime = file.type === 'application/pdf' || lowerName.endsWith('.pdf');
+  if (!isPdfMime) {
+    throw new Error('Please choose a valid .pdf catalog file.');
+  }
+  if (file.size <= 0) {
+    throw new Error('Selected PDF file is empty.');
+  }
+  if (file.size > MAX_CATALOG_PDF_BYTES) {
+    throw new Error(
+      `PDF is ${formatFileSize(file.size)}, which exceeds the 31 MB direct upload limit. Compress the PDF or use External PDF URL mode.`
+    );
+  }
+
+  onProgress?.({ stage: 'preparing', completedChunks: 0, totalChunks: 1, percent: 4 });
+
+  const buffer = await file.arrayBuffer();
+  const allBytes = new Uint8Array(buffer);
+  const totalChunks = Math.max(1, Math.ceil(allBytes.length / CATALOG_CHUNK_RAW_BYTES));
+  if (totalChunks > 85) {
+    throw new Error('PDF exceeds maximum chunk capacity (85 parts).');
+  }
+
+  const versionId = `cat_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+  const batchSize = 4;
+  let uploadedChunks = 0;
+
+  for (let start = 0; start < totalChunks; start += batchSize) {
+    const indices: number[] = [];
+    for (let i = start; i < Math.min(start + batchSize, totalChunks); i += 1) {
+      indices.push(i);
+    }
+
+    await Promise.all(
+      indices.map(async (chunkIndex) => {
+        const byteStart = chunkIndex * CATALOG_CHUNK_RAW_BYTES;
+        const byteEnd = Math.min(byteStart + CATALOG_CHUNK_RAW_BYTES, allBytes.length);
+        const base64Part = uint8ArrayToBase64(allBytes.subarray(byteStart, byteEnd));
+        const chunkId = `${versionId}_${chunkIndex}`;
+        const chunkPath = `catalog_chunks/${chunkId}`;
+
+        try {
+          await setDoc(doc(db, 'catalog_chunks', chunkId), {
+            versionId,
+            chunkIndex,
+            data: base64Part,
+            isPublic: true,
+            authorUid: user.uid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.CREATE, chunkPath);
+        }
+
+        uploadedChunks += 1;
+        onProgress?.({
+          stage: 'uploading',
+          completedChunks: uploadedChunks,
+          totalChunks,
+          percent: Math.min(92, Math.round((uploadedChunks / totalChunks) * 88) + 5),
+        });
+      })
+    );
+  }
+
+  onProgress?.({
+    stage: 'finalizing',
+    completedChunks: totalChunks,
+    totalChunks,
+    percent: 95,
+  });
+
+  const cleanFileName =
+    file.name.replace(/[^\w.\- ()]+/g, '_').trim().slice(0, 160) || DEFAULT_CATALOG_FILE_NAME;
+
+  const previous = await upsertCatalogConfigDoc({
+    mode: 'chunks',
+    buttonLabel,
+    fileName: cleanFileName,
+    fileSizeBytes: file.size,
+    pdfUrl: '',
+    versionId,
+    chunkCount: totalChunks,
+    authorUid: user.uid,
+  });
+
+  if (
+    previous.prevMode === 'chunks' &&
+    previous.prevVersionId &&
+    previous.prevVersionId !== versionId &&
+    previous.prevChunkCount &&
+    previous.prevChunkCount > 0
+  ) {
+    catalogBlobCache.delete(previous.prevVersionId);
+    onProgress?.({
+      stage: 'cleaning',
+      completedChunks: totalChunks,
+      totalChunks,
+      percent: 98,
+    });
+    await cleanupCatalogChunks(previous.prevVersionId, previous.prevChunkCount);
+  }
+
+  onProgress?.({
+    stage: 'cleaning',
+    completedChunks: totalChunks,
+    totalChunks,
+    percent: 100,
+  });
+}
+
+export async function saveCatalogExternalUrl(
+  pdfUrl: string,
+  buttonLabel: string,
+  fileName?: string
+): Promise<void> {
+  const user = auth.currentUser;
+  if (!isAuthorizedAdmin(user) || !user) {
+    throw new Error('Unauthorized: Admin sign-in required.');
+  }
+  const cleanUrl = sanitizeImageOrUrl(pdfUrl, 500);
+  if (!cleanUrl) {
+    throw new Error('Please enter a valid PDF URL starting with https:// or /.');
+  }
+
+  const derivedName =
+    clampStr(fileName || '', 160) ||
+    clampStr(cleanUrl.split('/').pop()?.split('?')[0] || '', 160) ||
+    'Yi_Lai_Catalog.pdf';
+
+  const previous = await upsertCatalogConfigDoc({
+    mode: 'url',
+    buttonLabel,
+    fileName: derivedName,
+    fileSizeBytes: 0,
+    pdfUrl: cleanUrl,
+    versionId: `url_${Date.now().toString(36)}`,
+    chunkCount: 0,
+    authorUid: user.uid,
+  });
+
+  if (
+    previous.prevMode === 'chunks' &&
+    previous.prevVersionId &&
+    previous.prevChunkCount &&
+    previous.prevChunkCount > 0
+  ) {
+    catalogBlobCache.delete(previous.prevVersionId);
+    await cleanupCatalogChunks(previous.prevVersionId, previous.prevChunkCount);
+  }
+}
+
+export async function resetCatalogToDefault(buttonLabel = ''): Promise<void> {
+  const user = auth.currentUser;
+  if (!isAuthorizedAdmin(user) || !user) {
+    throw new Error('Unauthorized: Admin sign-in required.');
+  }
+
+  const previous = await upsertCatalogConfigDoc({
+    mode: 'default',
+    buttonLabel,
+    fileName: DEFAULT_CATALOG_FILE_NAME,
+    fileSizeBytes: 23800000,
+    pdfUrl: DEFAULT_CATALOG_PDF_URL,
+    versionId: 'default_2026',
+    chunkCount: 0,
+    authorUid: user.uid,
+  });
+
+  if (
+    previous.prevMode === 'chunks' &&
+    previous.prevVersionId &&
+    previous.prevChunkCount &&
+    previous.prevChunkCount > 0
+  ) {
+    catalogBlobCache.delete(previous.prevVersionId);
+    await cleanupCatalogChunks(previous.prevVersionId, previous.prevChunkCount);
+  }
+}
+

@@ -1,14 +1,16 @@
-import { ArrowLeft, ArrowRight, FileText, Mail, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, MessageSquare } from 'lucide-react';
 import { LANG_LABELS, type LangCode } from '../i18n/translations';
+import type { CmsCatalogConfigDoc } from '../lib/firebase';
+import { CatalogLink } from './CatalogLink';
 
 interface FactoryPageProps {
   lang: LangCode;
+  catalogConfig?: CmsCatalogConfigDoc | null;
   onChangeLang: (lang: LangCode) => void;
   onNavigateHomeSection: (sectionId?: string) => void;
   t: (key: string) => string;
 }
 
-const CATALOG_PDF_URL = '/assets/aistudio/Yi_Lai_Plastics_Industry_Factory_CATALOG_b3ed4e35.pdf';
 const FACTORY_EMAIL = 'yilaiplastics@gmail.com';
 const FACTORY_PHONE = '+86 137 5705 0848';
 const FACTORY_WHATSAPP_URL = 'https://wa.me/8613757050848';
@@ -26,6 +28,7 @@ function ToConfirmTag({ label = 'TO CONFIRM' }: { label?: string }) {
 
 export function FactoryPage({
   lang,
+  catalogConfig,
   onChangeLang,
   onNavigateHomeSection,
   t,
@@ -120,15 +123,11 @@ export function FactoryPage({
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
                 </button>
 
-                <a
-                  href={CATALOG_PDF_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <CatalogLink
+                  catalogConfig={catalogConfig}
+                  defaultLabel={t('hero.cta2')}
                   className="inline-flex items-center gap-2 bg-transparent text-[var(--ink)] ring-1 ring-inset ring-[var(--ink)] font-semibold text-sm sm:text-base px-5 py-3 rounded-[4px] hover:-translate-y-px transition-transform"
-                >
-                  <FileText className="w-4 h-4" aria-hidden="true" />
-                  <span>{t('hero.cta2')}</span>
-                </a>
+                />
               </div>
             </div>
 

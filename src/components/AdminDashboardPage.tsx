@@ -8,7 +8,9 @@ import {
   Eye,
   EyeOff,
   FileText,
+  FileUp,
   Globe,
+  Link2,
   Lock,
   LogOut,
   Package,
@@ -17,26 +19,35 @@ import {
   Save,
   ShieldAlert,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { PRODUCT_FAMILIES } from '../data/catalog';
 import { BLOG_POSTS } from '../data/blogPosts';
 import {
+  DEFAULT_CATALOG_FILE_NAME,
   MASKED_ADMIN_EMAIL,
+  MAX_CATALOG_PDF_BYTES,
+  formatFileSize,
   isAuthorizedAdmin,
   maskEmailAddress,
   removeBlogPost,
   removeProduct,
   removeSeoSetting,
+  resetCatalogToDefault,
   sanitizeSlugId,
   saveBlogPost,
+  saveCatalogExternalUrl,
   saveProduct,
   saveSeoSetting,
   signInAdminWithGoogle,
   signOutAdmin,
   subscribeAllBlogPostsAdmin,
   subscribeAllProductsAdmin,
+  uploadCatalogPdfFile,
+  type CatalogUploadProgress,
   type CmsBlogPostDoc,
   type CmsBlogPostInput,
+  type CmsCatalogConfigDoc,
   type CmsProductDoc,
   type CmsProductInput,
   type CmsSeoSettingDoc,
@@ -45,19 +56,21 @@ import {
   type SeoPageKey,
 } from '../lib/firebase';
 import { DEFAULT_SEO_PRESETS } from '../lib/seo';
+import { CatalogLink } from './CatalogLink';
 import { ImageUploadField, MultiImageUploadField } from './ImageUploadField';
 
 interface AdminDashboardPageProps {
   user: User | null;
   authReady: boolean;
   seoSettings: Record<string, CmsSeoSettingDoc>;
+  catalogConfig: CmsCatalogConfigDoc | null;
   onNavigateHomeSection: (sectionId?: string) => void;
   onOpenPostPage: (postId: string) => void;
   onOpenProductPage: (productId: string) => void;
   t: (key: string) => string;
 }
 
-type AdminTab = 'products' | 'blog' | 'seo';
+type AdminTab = 'products' | 'blog' | 'seo' | 'catalog';
 
 const SAMPLE_IMAGE_PATHS = [
   { label: 'Trigger TS001', path: '/images/prod-trigger-ts001.jpg' },
@@ -117,6 +130,7 @@ export function AdminDashboardPage({
   user,
   authReady,
   seoSettings,
+  catalogConfig,
   onNavigateHomeSection,
   onOpenPostPage,
   onOpenProductPage,
@@ -150,6 +164,15 @@ export function AdminDashboardPage({
   const [selectedSeoKey, setSelectedSeoKey] = useState<SeoPageKey>('global');
   const [seoForm, setSeoForm] = useState<CmsSeoSettingInput>(DEFAULT_SEO_PRESETS.global);
   const [savingSeo, setSavingSeo] = useState(false);
+
+  // Catalog PDF Form
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
+  const [catalogButtonLabel, setCatalogButtonLabel] = useState('');
+  const [catalogExternalUrl, setCatalogExternalUrl] = useState('');
+  const [catalogExternalName, setCatalogExternalName] = useState('');
+  const [catalogProgress, setCatalogProgress] = useState<CatalogUploadProgress | null>(null);
+  const [savingCatalog, setSavingCatalog] = useState(false);
+  const [dragOverCatalog, setDragOverCatalog] = useState(false);
 
   // Automatically sign out unauthorized non-admin Google accounts cleanly
   useEffect(() => {
@@ -212,6 +235,16 @@ export function AdminDashboardPage({
       setSeoForm({ ...DEFAULT_SEO_PRESETS[selectedSeoKey] });
     }
   }, [selectedSeoKey, seoSettings]);
+
+  // Sync Catalog PDF form fields from live Firestore config
+  useEffect(() => {
+    if (!catalogConfig) return;
+    setCatalogButtonLabel(catalogConfig.buttonLabel || '');
+    if (catalogConfig.mode === 'url') {
+      setCatalogExternalUrl(catalogConfig.pdfUrl || '');
+      setCatalogExternalName(catalogConfig.fileName || '');
+    }
+  }, [catalogConfig]);
 
   const handleGoogleSignIn = async () => {
     setAuthError(null);
@@ -560,6 +593,97 @@ export function AdminDashboardPage({
     }
   };
 
+  // ==================== CATALOG PDF HANDLERS ====================
+  const handlePickCatalogFile = (file: File | null) => {
+    if (!file) return;
+    setStatusNotice(null);
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdf) {
+      setStatusNotice({ type: 'err', text: 'Only .pdf files are accepted for the product catalog.' });
+      return;
+    }
+    if (file.size > MAX_CATALOG_PDF_BYTES) {
+      setStatusNotice({
+        type: 'err',
+        text: `Selected PDF (${formatFileSize(file.size)}) exceeds the 31 MB upload limit. Please compress it or paste an External PDF URL below.`,
+      });
+      return;
+    }
+    setSelectedPdfFile(file);
+  };
+
+  const handleUploadCatalogPdf = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPdfFile) {
+      setStatusNotice({ type: 'err', text: 'Select a PDF file first before uploading.' });
+      return;
+    }
+    setStatusNotice(null);
+    setSavingCatalog(true);
+    setCatalogProgress({ stage: 'preparing', completedChunks: 0, totalChunks: 1, percent: 2 });
+    try {
+      await uploadCatalogPdfFile(selectedPdfFile, catalogButtonLabel, (progress) => {
+        setCatalogProgress(progress);
+      });
+      setStatusNotice({
+        type: 'ok',
+        text: `Catalog "${selectedPdfFile.name}" (${formatFileSize(selectedPdfFile.size)}) uploaded and live across every download button.`,
+      });
+      setSelectedPdfFile(null);
+    } catch (err) {
+      setStatusNotice({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'Failed to upload catalog PDF.',
+      });
+    } finally {
+      setSavingCatalog(false);
+      setCatalogProgress(null);
+    }
+  };
+
+  const handleSaveCatalogUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatusNotice(null);
+    setSavingCatalog(true);
+    try {
+      await saveCatalogExternalUrl(catalogExternalUrl, catalogButtonLabel, catalogExternalName);
+      setStatusNotice({
+        type: 'ok',
+        text: 'External catalog PDF URL saved and active across the website.',
+      });
+    } catch (err) {
+      setStatusNotice({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'Failed to save catalog URL.',
+      });
+    } finally {
+      setSavingCatalog(false);
+    }
+  };
+
+  const handleResetCatalogDefault = async () => {
+    setStatusNotice(null);
+    setSavingCatalog(true);
+    try {
+      await resetCatalogToDefault('');
+      setCatalogButtonLabel('');
+      setCatalogExternalUrl('');
+      setCatalogExternalName('');
+      setSelectedPdfFile(null);
+      setStatusNotice({
+        type: 'ok',
+        text: 'Catalog reverted to the built-in 2026 Yi Lai Factory PDF.',
+      });
+    } catch (err) {
+      setStatusNotice({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'Failed to reset catalog.',
+      });
+    } finally {
+      setSavingCatalog(false);
+    }
+  };
+
   // ==================== AUTH GATE VIEW ====================
   if (!authReady) {
     return (
@@ -763,6 +887,21 @@ export function AdminDashboardPage({
             >
               <Globe className="w-4 h-4" aria-hidden="true" />
               <span>03 · SEO Metadata</span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'catalog'}
+              onClick={() => setActiveTab('catalog')}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded font-mono-spec text-xs uppercase tracking-wider transition-colors cursor-pointer ${
+                activeTab === 'catalog'
+                  ? 'bg-[var(--blue)] text-[var(--btn-ink)]'
+                  : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--line)] hover:border-[var(--blue)] hover:text-[var(--blue)]'
+              }`}
+            >
+              <FileUp className="w-4 h-4" aria-hidden="true" />
+              <span>04 · Catalog PDF</span>
             </button>
           </div>
         </div>
@@ -1898,6 +2037,296 @@ export function AdminDashboardPage({
                       {seoForm.ogDescription || seoForm.description}
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===================== TAB 4: CATALOG PDF UPLOAD & RE-UPLOAD ===================== */}
+          {activeTab === 'catalog' && (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 items-start">
+              {/* Left Column: Direct PDF Upload / Re-upload Form */}
+              <div className="space-y-6">
+                <form
+                  onSubmit={handleUploadCatalogPdf}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded p-6 sm:p-7 space-y-5"
+                >
+                  <div className="pb-4 border-b border-[var(--line)]">
+                    <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--blue)]">
+                      Replace or Re-upload Storefront PDF
+                    </div>
+                    <h2 className="font-display font-bold uppercase text-2xl text-[var(--ink)]">
+                      Upload New Catalog PDF
+                    </h2>
+                    <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+                      Every &ldquo;Download Catalog&rdquo; CTA across the hero, footer, factory page, product sheets, and engineering notes updates immediately after upload.
+                    </p>
+                  </div>
+
+                  {/* Drag & Drop / File Picker */}
+                  <div>
+                    <label className="block font-mono-spec text-[11px] uppercase tracking-wider text-[var(--muted)] mb-2">
+                      Catalog PDF File (.pdf · Up to 31 MB)
+                    </label>
+                    <label
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragOverCatalog(true);
+                      }}
+                      onDragLeave={() => setDragOverCatalog(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOverCatalog(false);
+                        const dropped = e.dataTransfer.files?.[0] ?? null;
+                        handlePickCatalogFile(dropped);
+                      }}
+                      className={`flex flex-col items-center justify-center text-center border-2 border-dashed rounded p-7 transition-colors cursor-pointer ${
+                        dragOverCatalog
+                          ? 'border-[var(--blue)] bg-[color-mix(in_srgb,var(--blue)_8%,var(--surface))]'
+                          : 'border-[var(--line)] bg-[var(--bg)] hover:border-[var(--blue)]'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        className="sr-only"
+                        disabled={savingCatalog}
+                        onChange={(e) => {
+                          handlePickCatalogFile(e.target.files?.[0] ?? null);
+                          e.target.value = '';
+                        }}
+                      />
+                      <Upload className="w-7 h-7 text-[var(--blue)] mb-2.5" aria-hidden="true" />
+                      {selectedPdfFile ? (
+                        <div className="space-y-1">
+                          <div className="font-mono-spec text-xs font-semibold text-[var(--ink)] break-all">
+                            {selectedPdfFile.name}
+                          </div>
+                          <div className="font-mono-spec text-[11px] text-[var(--blue)]">
+                            {formatFileSize(selectedPdfFile.size)} · Ready to upload (click to choose another)
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium text-[var(--ink)]">
+                            Drop your updated PDF catalog here or click to browse
+                          </div>
+                          <div className="font-mono-spec text-[11px] text-[var(--muted)]">
+                            Old uploaded versions are cleaned up automatically once the new file is live.
+                          </div>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block font-mono-spec text-[11px] uppercase tracking-wider text-[var(--muted)] mb-1.5">
+                      Optional Custom Button Label (leave blank for translated default)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={80}
+                      value={catalogButtonLabel}
+                      onChange={(e) => setCatalogButtonLabel(e.target.value)}
+                      placeholder="e.g. Download 2027 Catalog (PDF)"
+                      className="w-full px-3.5 py-2.5 border border-[var(--line)] rounded bg-[var(--bg)] text-sm text-[var(--ink)]"
+                    />
+                  </div>
+
+                  {catalogProgress && (
+                    <div className="p-4 rounded border border-[var(--blue)] bg-[color-mix(in_srgb,var(--blue)_7%,var(--surface))] space-y-2">
+                      <div className="flex items-center justify-between font-mono-spec text-xs text-[var(--blue)]">
+                        <span>
+                          {catalogProgress.stage === 'preparing' && 'Reading PDF file…'}
+                          {catalogProgress.stage === 'uploading' &&
+                            `Uploading part ${catalogProgress.completedChunks} of ${catalogProgress.totalChunks}…`}
+                          {catalogProgress.stage === 'finalizing' && 'Publishing live catalog pointer…'}
+                          {catalogProgress.stage === 'cleaning' && 'Cleaning up superseded version…'}
+                        </span>
+                        <span>{catalogProgress.percent}%</span>
+                      </div>
+                      <div className="h-2 rounded bg-[var(--bg)] border border-[var(--line)] overflow-hidden">
+                        <div
+                          className="h-full bg-[var(--blue)] transition-all duration-200"
+                          style={{ width: `${catalogProgress.percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <button
+                      type="submit"
+                      disabled={savingCatalog || !selectedPdfFile}
+                      className="inline-flex items-center gap-2 bg-[var(--red)] text-white font-semibold text-sm px-6 py-3 rounded hover:-translate-y-px transition-transform disabled:opacity-50 cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4" aria-hidden="true" />
+                      <span>
+                        {savingCatalog
+                          ? 'Uploading Catalog…'
+                          : catalogConfig?.mode === 'chunks'
+                            ? 'Re-upload & Replace Catalog PDF'
+                            : 'Upload & Publish Catalog PDF'}
+                      </span>
+                    </button>
+
+                    {selectedPdfFile && !savingCatalog && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPdfFile(null)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded border border-[var(--line)] font-mono-spec text-xs uppercase text-[var(--muted)] hover:text-[var(--ink)] cursor-pointer"
+                      >
+                        Clear Selection
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Optional External URL Form */}
+                <form
+                  onSubmit={handleSaveCatalogUrl}
+                  className="bg-[var(--surface)] border border-[var(--line)] rounded p-6 sm:p-7 space-y-4"
+                >
+                  <div className="pb-3 border-b border-[var(--line)]">
+                    <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--muted)]">
+                      Alternative Option · Large Files (&gt; 31 MB) or CDN
+                    </div>
+                    <h3 className="font-display font-bold uppercase text-xl text-[var(--ink)] flex items-center gap-2">
+                      <Link2 className="w-4 h-4 text-[var(--blue)]" aria-hidden="true" />
+                      <span>Link External Hosted PDF URL</span>
+                    </h3>
+                  </div>
+
+                  <div>
+                    <label className="block font-mono-spec text-[11px] uppercase tracking-wider text-[var(--muted)] mb-1.5">
+                      Direct PDF URL (https://… or /assets/…)
+                    </label>
+                    <input
+                      type="text"
+                      value={catalogExternalUrl}
+                      onChange={(e) => setCatalogExternalUrl(e.target.value)}
+                      placeholder="https://cdn.yilaiplastics.online/Yi_Lai_Catalog_2027.pdf"
+                      className="w-full px-3.5 py-2.5 border border-[var(--line)] rounded bg-[var(--bg)] text-sm text-[var(--ink)]"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-mono-spec text-[11px] uppercase tracking-wider text-[var(--muted)] mb-1.5">
+                      Display File Name (optional)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={160}
+                      value={catalogExternalName}
+                      onChange={(e) => setCatalogExternalName(e.target.value)}
+                      placeholder="Yi_Lai_Catalog_2027.pdf"
+                      className="w-full px-3.5 py-2.5 border border-[var(--line)] rounded bg-[var(--bg)] text-sm text-[var(--ink)]"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingCatalog || !catalogExternalUrl.trim()}
+                    className="inline-flex items-center gap-2 bg-[var(--blue)] text-[var(--btn-ink)] font-semibold text-sm px-5 py-2.5 rounded hover:-translate-y-px transition-transform disabled:opacity-50 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" aria-hidden="true" />
+                    <span>Use External PDF URL</span>
+                  </button>
+                </form>
+              </div>
+
+              {/* Right Column: Live Active Catalog Status & Test Download */}
+              <div className="space-y-5">
+                <div className="bg-[var(--surface)] border-[1.5px] border-[var(--blue)] rounded p-6 space-y-4">
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-[var(--line)]">
+                    <div>
+                      <div className="font-mono-spec text-[10px] uppercase tracking-[0.1em] text-[var(--blue)]">
+                        Currently Active on Website
+                      </div>
+                      <h3 className="font-display font-bold uppercase text-xl text-[var(--ink)]">
+                        Live Catalog Status
+                      </h3>
+                    </div>
+                    <span className="font-mono-spec text-[10px] uppercase px-2.5 py-1 rounded border border-[var(--blue)] text-[var(--blue)] bg-[color-mix(in_srgb,var(--blue)_10%,var(--surface))]">
+                      {catalogConfig?.mode === 'chunks'
+                        ? 'Uploaded PDF'
+                        : catalogConfig?.mode === 'url'
+                          ? 'External URL'
+                          : 'Built-in 2026'}
+                    </span>
+                  </div>
+
+                  <dl className="space-y-3 text-sm">
+                    <div className="flex justify-between gap-3 py-1.5 border-b border-dashed border-[var(--line)]">
+                      <dt className="font-mono-spec text-xs uppercase text-[var(--muted)]">File Name</dt>
+                      <dd className="font-mono-spec text-xs text-[var(--ink)] text-right break-all" dir="ltr">
+                        {catalogConfig?.fileName || DEFAULT_CATALOG_FILE_NAME}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-1.5 border-b border-dashed border-[var(--line)]">
+                      <dt className="font-mono-spec text-xs uppercase text-[var(--muted)]">File Size</dt>
+                      <dd className="font-mono-spec text-xs text-[var(--ink)]">
+                        {catalogConfig?.fileSizeBytes
+                          ? formatFileSize(catalogConfig.fileSizeBytes)
+                          : catalogConfig?.mode === 'url'
+                            ? 'External Host'
+                            : '23.0 MB (Built-in)'}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-3 py-1.5 border-b border-dashed border-[var(--line)]">
+                      <dt className="font-mono-spec text-xs uppercase text-[var(--muted)]">Button Label</dt>
+                      <dd className="text-xs text-[var(--ink)] text-right">
+                        {catalogConfig?.buttonLabel?.trim() || `${t('hero.cta2')} (Auto-translated)`}
+                      </dd>
+                    </div>
+                    {catalogConfig?.mode === 'url' && catalogConfig.pdfUrl && (
+                      <div className="py-1.5 border-b border-dashed border-[var(--line)]">
+                        <dt className="font-mono-spec text-xs uppercase text-[var(--muted)] mb-1">Active URL</dt>
+                        <dd className="font-mono-spec text-[11px] text-[var(--blue)] break-all" dir="ltr">
+                          {catalogConfig.pdfUrl}
+                        </dd>
+                      </div>
+                    )}
+                    {catalogConfig?.mode === 'chunks' && (
+                      <div className="flex justify-between gap-3 py-1.5 border-b border-dashed border-[var(--line)]">
+                        <dt className="font-mono-spec text-xs uppercase text-[var(--muted)]">Version / Parts</dt>
+                        <dd className="font-mono-spec text-xs text-[var(--ink)]" dir="ltr">
+                          {catalogConfig.versionId} ({catalogConfig.chunkCount} chunks)
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+
+                  <div className="pt-2 flex flex-wrap items-center gap-3">
+                    <CatalogLink
+                      catalogConfig={catalogConfig}
+                      defaultLabel="Test Live Catalog Download"
+                      className="inline-flex items-center gap-2 bg-[var(--blue)] text-[var(--btn-ink)] font-semibold text-sm px-5 py-2.5 rounded hover:-translate-y-px transition-transform"
+                    />
+
+                    {catalogConfig && catalogConfig.mode !== 'default' && (
+                      <button
+                        type="button"
+                        disabled={savingCatalog}
+                        onClick={handleResetCatalogDefault}
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded border border-[var(--line)] font-mono-spec text-xs uppercase text-[var(--muted)] hover:border-[var(--red)] hover:text-[var(--red)] transition-colors disabled:opacity-50 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>Revert to Built-in PDF</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-[var(--surface)] border border-[var(--line)] rounded p-5 space-y-2 text-xs text-[var(--muted)] leading-relaxed">
+                  <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--ink)]">
+                    Where this catalog appears
+                  </div>
+                  <p>
+                    Updating here automatically replaces the PDF served in the Home Hero, Website Footer, Factory Page, Trigger Sprayers Configurator, Product Detail Sheets, Use Cases Directory, and Technical Blog Notes.
+                  </p>
                 </div>
               </div>
             </div>

@@ -6,7 +6,6 @@ import {
   Camera,
   Check,
   Copy,
-  FileText,
   Globe,
   Lock,
   Mail,
@@ -26,6 +25,7 @@ import { TriggerSprayersPage } from './components/TriggerSprayersPage';
 import { UseCasesPage } from './components/UseCasesPage';
 import { FactoryPage } from './components/FactoryPage';
 import { AdminDashboardPage } from './components/AdminDashboardPage';
+import { CatalogLink } from './components/CatalogLink';
 import { ProductDetailPage, type ProductDetailData } from './components/ProductDetailPage';
 import { SprayerConfiguratorSection } from './components/SprayerConfiguratorSection';
 import {
@@ -41,11 +41,13 @@ import { LANG_LABELS, TRANSLATIONS, type LangCode } from './i18n/translations';
 import {
   isAuthorizedAdmin,
   subscribeAuthState,
+  subscribePublicCatalogConfig,
   subscribePublicSeoSettings,
   subscribePublishedBlogPosts,
   subscribePublishedProducts,
   testConnection,
   type CmsBlogPostDoc,
+  type CmsCatalogConfigDoc,
   type CmsProductDoc,
   type CmsSeoSettingDoc,
   type SeoPageKey,
@@ -55,7 +57,6 @@ import { applySeoToDocument } from './lib/seo';
 const FACTORY_EMAIL = 'yilaiplastics@gmail.com';
 const FACTORY_PHONE = '+86 137 5705 0848';
 const FACTORY_WHATSAPP_URL = 'https://wa.me/8613757050848';
-const CATALOG_PDF_URL = '/assets/aistudio/Yi_Lai_Plastics_Industry_Factory_CATALOG_b3ed4e35.pdf';
 const LOGO_URL = '/assets/aistudio/Untitled_design_51d75519.png';
 
 type DisplayProduct = Omit<ProductFamily, 'titleKey' | 'usesKey' | 'altKey'> & {
@@ -257,6 +258,7 @@ export default function App() {
   const [cmsProducts, setCmsProducts] = useState<CmsProductDoc[]>([]);
   const [cmsBlogPosts, setCmsBlogPosts] = useState<CmsBlogPostDoc[]>([]);
   const [seoSettings, setSeoSettings] = useState<Record<string, CmsSeoSettingDoc>>({});
+  const [catalogConfig, setCatalogConfig] = useState<CmsCatalogConfigDoc | null>(null);
 
   // Quote form state
   const [product, setProduct] = useState('');
@@ -295,11 +297,16 @@ export default function App() {
       (map) => setSeoSettings(map),
       (err) => console.error('Public SEO listener error:', err)
     );
+    const unsubCatalog = subscribePublicCatalogConfig(
+      (cfg) => setCatalogConfig(cfg),
+      (err) => console.error('Public catalog listener error:', err)
+    );
     return () => {
       unsubAuth();
       unsubProducts();
       unsubPosts();
       unsubSeo();
+      unsubCatalog();
     };
   }, []);
 
@@ -993,6 +1000,7 @@ export default function App() {
             user={authUser}
             authReady={authReady}
             seoSettings={seoSettings}
+            catalogConfig={catalogConfig}
             onNavigateHomeSection={navigateToHomeSection}
             onOpenPostPage={openPostPage}
             onOpenProductPage={openProductPage}
@@ -1001,6 +1009,7 @@ export default function App() {
         ) : isFactoryPage ? (
           <FactoryPage
             lang={lang}
+            catalogConfig={catalogConfig}
             onChangeLang={setLang}
             onNavigateHomeSection={navigateToHomeSection}
             t={t}
@@ -1008,6 +1017,7 @@ export default function App() {
         ) : isUseCasesPage ? (
           <UseCasesPage
             lang={lang}
+            catalogConfig={catalogConfig}
             onChangeLang={setLang}
             onNavigateHomeSection={navigateToHomeSection}
             onQuoteUseCase={handleUseCaseQuote}
@@ -1016,6 +1026,7 @@ export default function App() {
         ) : isTriggerPage ? (
           <TriggerSprayersPage
             lang={lang}
+            catalogConfig={catalogConfig}
             onChangeLang={setLang}
             onNavigateHomeSection={navigateToHomeSection}
             onQuoteConfigured={handleConfiguredTriggerQuote}
@@ -1025,6 +1036,7 @@ export default function App() {
           <ProductDetailPage
             product={activeProductDetail}
             relatedProducts={relatedProductsDetail}
+            catalogConfig={catalogConfig}
             lang={lang}
             onChangeLang={setLang}
             onNavigateHomeSection={navigateToHomeSection}
@@ -1036,6 +1048,7 @@ export default function App() {
           <BlogPostPage
             post={activePost}
             allPosts={mergedBlogPosts}
+            catalogConfig={catalogConfig}
             lang={lang}
             onChangeLang={setLang}
             onNavigateHomeSection={navigateToHomeSection}
@@ -1113,15 +1126,11 @@ export default function App() {
                     <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
                   </a>
 
-                  <a
-                    href={CATALOG_PDF_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <CatalogLink
+                    catalogConfig={catalogConfig}
+                    defaultLabel={t('hero.cta2')}
                     className="inline-flex items-center gap-2 bg-transparent text-[var(--ink)] ring-1 ring-inset ring-[var(--ink)] font-semibold text-[15px] px-5 py-3.5 rounded-[4px] hover:-translate-y-px active:translate-y-px transition-transform whitespace-nowrap shrink-0"
-                  >
-                    <FileText className="w-4 h-4" aria-hidden="true" />
-                    <span>{t('hero.cta2')}</span>
-                  </a>
+                  />
                 </div>
               </div>
 
@@ -2211,15 +2220,12 @@ export default function App() {
                 {t('foot.linksTitle')}
               </div>
               <div className="space-y-2 text-sm">
-                <a
-                  href={CATALOG_PDF_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <CatalogLink
+                  catalogConfig={catalogConfig}
+                  defaultLabel={t('foot.catalogLink')}
+                  iconClassName="w-3.5 h-3.5 shrink-0"
                   className="inline-flex items-center gap-1.5 text-[var(--blue)] font-medium hover:underline"
-                >
-                  <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>{t('foot.catalogLink')}</span>
-                </a>
+                />
                 <div className="text-xs text-[var(--muted)] flex flex-wrap items-center gap-2">
                   <span>{t('foot.social')}:</span>
                   <ToConfirmTag />

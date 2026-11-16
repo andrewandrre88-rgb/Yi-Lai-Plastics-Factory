@@ -1,10 +1,13 @@
-import { ArrowLeft, ArrowRight, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { TRIGGER_SERIES_SPECS } from '../data/triggerOptions';
 import { LANG_LABELS, type LangCode } from '../i18n/translations';
+import type { CmsCatalogConfigDoc } from '../lib/firebase';
+import { CatalogLink } from './CatalogLink';
 import { SprayerConfiguratorSection } from './SprayerConfiguratorSection';
 
 interface TriggerSprayersPageProps {
   lang: LangCode;
+  catalogConfig?: CmsCatalogConfigDoc | null;
   onChangeLang: (lang: LangCode) => void;
   onNavigateHomeSection: (sectionId?: string) => void;
   onQuoteConfigured: (payload: {
@@ -18,6 +21,7 @@ interface TriggerSprayersPageProps {
 
 export function TriggerSprayersPage({
   lang,
+  catalogConfig,
   onChangeLang,
   onNavigateHomeSection,
   onQuoteConfigured,
@@ -108,15 +112,11 @@ export function TriggerSprayersPage({
                   <span>{t('ts.buildCta')}</span>
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
                 </button>
-                <a
-                  href="/assets/aistudio/Yi_Lai_Plastics_Industry_Factory_CATALOG_b3ed4e35.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <CatalogLink
+                  catalogConfig={catalogConfig}
+                  defaultLabel={t('hero.cta2')}
                   className="inline-flex items-center gap-2 bg-transparent text-[var(--ink)] ring-1 ring-inset ring-[var(--ink)] font-semibold text-sm sm:text-base px-5 py-3 rounded-[4px] hover:-translate-y-px transition-transform"
-                >
-                  <FileText className="w-4 h-4" aria-hidden="true" />
-                  <span>{t('hero.cta2')}</span>
-                </a>
+                />
               </div>
             </div>
 

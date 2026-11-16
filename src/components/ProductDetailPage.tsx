@@ -4,14 +4,12 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  FileText,
   Layers,
 } from 'lucide-react';
 import { LANG_LABELS, type LangCode } from '../i18n/translations';
+import type { CmsCatalogConfigDoc } from '../lib/firebase';
+import { CatalogLink } from './CatalogLink';
 import { ProductDrawing, resolveDrawingVariant } from './ProductDrawings';
-
-const CATALOG_PDF_URL =
-  '/assets/aistudio/Yi_Lai_Plastics_Industry_Factory_CATALOG_b3ed4e35.pdf';
 
 export interface ProductDetailData {
   id: string;
@@ -33,6 +31,7 @@ export interface ProductDetailData {
 interface ProductDetailPageProps {
   product: ProductDetailData;
   relatedProducts: ProductDetailData[];
+  catalogConfig?: CmsCatalogConfigDoc | null;
   lang: LangCode;
   onChangeLang: (lang: LangCode) => void;
   onNavigateHomeSection: (sectionId?: string) => void;
@@ -44,6 +43,7 @@ interface ProductDetailPageProps {
 export function ProductDetailPage({
   product,
   relatedProducts,
+  catalogConfig,
   lang,
   onChangeLang,
   onNavigateHomeSection,
@@ -319,15 +319,11 @@ export function ProductDetailPage({
                   <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
                 </button>
 
-                <a
-                  href={CATALOG_PDF_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <CatalogLink
+                  catalogConfig={catalogConfig}
+                  defaultLabel={t('hero.cta2')}
                   className="inline-flex items-center gap-2 bg-transparent text-[var(--ink)] ring-1 ring-inset ring-[var(--ink)] font-semibold text-sm px-5 py-3 rounded-[4px] hover:-translate-y-px transition-transform"
-                >
-                  <FileText className="w-4 h-4" aria-hidden="true" />
-                  <span>{t('hero.cta2')}</span>
-                </a>
+                />
               </div>
             </div>
           </div>
