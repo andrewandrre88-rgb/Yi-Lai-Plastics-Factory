@@ -1,5 +1,7 @@
 import type { CmsSeoSettingDoc, CmsSeoSettingInput, SeoPageKey } from './firebase';
 
+export const SITE_CANONICAL_ORIGIN = 'https://yilaiplastics.online';
+
 export const DEFAULT_SEO_PRESETS: Record<SeoPageKey, CmsSeoSettingInput> = {
   global: {
     id: 'global',
@@ -15,7 +17,7 @@ export const DEFAULT_SEO_PRESETS: Record<SeoPageKey, CmsSeoSettingInput> = {
     ogSiteName: 'Yi Lai Plastics Industry',
     ogImage: '/assets/aistudio/Untitled_design_51d75519.png',
     twitterCard: 'summary_large_image',
-    canonicalBaseUrl: '',
+    canonicalBaseUrl: SITE_CANONICAL_ORIGIN,
     schemaOrgName: 'Yi Lai Plastics Industry',
     schemaOrgDescription:
       'Manufacturer of trigger sprayers, lotion pumps, fine mist sprayers, foam pumps, foundation pumps and bottle caps.',
@@ -35,7 +37,7 @@ export const DEFAULT_SEO_PRESETS: Record<SeoPageKey, CmsSeoSettingInput> = {
     ogSiteName: 'Yi Lai Plastics Industry',
     ogImage: '/assets/aistudio/Untitled_design_51d75519.png',
     twitterCard: 'summary_large_image',
-    canonicalBaseUrl: '',
+    canonicalBaseUrl: SITE_CANONICAL_ORIGIN,
     schemaOrgName: 'Yi Lai Plastics Industry',
     schemaOrgDescription:
       'Manufacturer of trigger sprayers, lotion pumps, fine mist sprayers, foam pumps, foundation pumps and bottle caps.',
@@ -132,12 +134,14 @@ export function applySeoToDocument(
   const resolvedOgDesc =
     postOverride?.description?.trim() || routeCfg.ogDescription || resolvedDescription;
   const resolvedSiteName = routeCfg.ogSiteName || globalCfg.ogSiteName;
-  const resolvedImage = postOverride?.image?.trim() || routeCfg.ogImage || globalCfg.ogImage;
+  const rawImage = postOverride?.image?.trim() || routeCfg.ogImage || globalCfg.ogImage;
+  const resolvedImage =
+    rawImage && rawImage.startsWith('/') ? `${SITE_CANONICAL_ORIGIN}${rawImage}` : rawImage;
   const resolvedTwitterCard = routeCfg.twitterCard || globalCfg.twitterCard || 'summary_large_image';
   const baseCanonical =
     routeCfg.canonicalBaseUrl ||
     globalCfg.canonicalBaseUrl ||
-    (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '');
+    SITE_CANONICAL_ORIGIN;
 
   document.title = resolvedTitle;
 
