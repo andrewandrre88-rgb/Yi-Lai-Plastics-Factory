@@ -223,7 +223,16 @@ export function AdminDashboardPage({
         await signOutAdmin();
       }
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : 'Google sign-in cancelled or failed.');
+      const rawMessage = err instanceof Error ? err.message : 'Google sign-in cancelled or failed.';
+      const errCode = typeof err === 'object' && err !== null && 'code' in err ? String((err as { code?: unknown }).code) : '';
+      if (errCode === 'auth/unauthorized-domain' || rawMessage.includes('auth/unauthorized-domain')) {
+        const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+        setAuthError(
+          `Firebase blocked sign-in from "${currentHost}" (auth/unauthorized-domain). Add "${currentHost}" in Firebase Console (project gen-lang-client-0738073213) → Authentication → Settings → Authorized domains.`
+        );
+      } else {
+        setAuthError(rawMessage);
+      }
     } finally {
       setSigningIn(false);
     }
