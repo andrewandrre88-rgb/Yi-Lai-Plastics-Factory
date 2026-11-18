@@ -7,9 +7,10 @@ import {
   Layers,
 } from 'lucide-react';
 import { LANG_LABELS, type LangCode } from '../i18n/translations';
-import type { CmsCatalogConfigDoc } from '../lib/firebase';
+import type { CmsCatalogConfigDoc, CmsSocialSettingDoc } from '../lib/firebase';
 import { CatalogLink } from './CatalogLink';
 import { ProductDrawing, resolveDrawingVariant } from './ProductDrawings';
+import { SocialLinksBar } from './SocialLinksBar';
 
 export interface ProductDetailData {
   id: string;
@@ -32,6 +33,7 @@ interface ProductDetailPageProps {
   product: ProductDetailData;
   relatedProducts: ProductDetailData[];
   catalogConfig?: CmsCatalogConfigDoc | null;
+  socialSettings?: CmsSocialSettingDoc | null;
   lang: LangCode;
   onChangeLang: (lang: LangCode) => void;
   onNavigateHomeSection: (sectionId?: string) => void;
@@ -44,6 +46,7 @@ export function ProductDetailPage({
   product,
   relatedProducts,
   catalogConfig,
+  socialSettings,
   lang,
   onChangeLang,
   onNavigateHomeSection,
@@ -145,7 +148,8 @@ export function ProductDetailPage({
                     className="font-mono-spec text-[11px] uppercase tracking-[0.08em] text-[var(--blue)]"
                     dir="ltr"
                   >
-                    {product.figCode} · {product.modelRange}
+                    {product.figCode}
+                    {product.modelRange ? ` · ${product.modelRange}` : ''}
                   </span>
                   {gallery.length > 0 && (
                     <span className="font-mono-spec text-[11px] text-[var(--muted)]" dir="ltr">
@@ -246,14 +250,16 @@ export function ProductDetailPage({
                   Technical Specification Sheet
                 </div>
                 <dl className="divide-y divide-dashed divide-[var(--line)] text-sm">
-                  <div className="py-2.5 flex items-baseline justify-between gap-4">
-                    <dt className="font-mono-spec text-xs uppercase text-[var(--muted)] shrink-0">
-                      Model Range
-                    </dt>
-                    <dd className="font-mono-spec font-medium text-[var(--ink)] text-right" dir="ltr">
-                      {product.modelRange}
-                    </dd>
-                  </div>
+                  {product.modelRange && (
+                    <div className="py-2.5 flex items-baseline justify-between gap-4">
+                      <dt className="font-mono-spec text-xs uppercase text-[var(--muted)] shrink-0">
+                        Model Range
+                      </dt>
+                      <dd className="font-mono-spec font-medium text-[var(--ink)] text-right" dir="ltr">
+                        {product.modelRange}
+                      </dd>
+                    </div>
+                  )}
                   <div className="py-2.5 flex items-baseline justify-between gap-4">
                     <dt className="font-mono-spec text-xs uppercase text-[var(--muted)] shrink-0">
                       {t('spec.neck')}
@@ -325,6 +331,17 @@ export function ProductDetailPage({
                   className="inline-flex items-center gap-2 bg-transparent text-[var(--ink)] ring-1 ring-inset ring-[var(--ink)] font-semibold text-sm px-5 py-3 rounded-[4px] hover:-translate-y-px transition-transform"
                 />
               </div>
+
+              {/* Official Social Media, Direct WhatsApp & Share Bar */}
+              <SocialLinksBar
+                socialSettings={socialSettings}
+                contextType="product"
+                itemTitle={
+                  product.modelRange ? `${product.title} (${product.modelRange})` : product.title
+                }
+                itemSummary={product.uses}
+                hashPath={`#/products/${encodeURIComponent(product.id)}`}
+              />
             </div>
           </div>
         </div>
@@ -369,7 +386,8 @@ export function ProductDetailPage({
                       dir="ltr"
                       className="absolute top-2.5 left-3 font-mono-spec text-[10px] text-[#1648C9]"
                     >
-                      {rel.figCode} · {rel.modelRange}
+                      {rel.figCode}
+                      {rel.modelRange ? ` · ${rel.modelRange}` : ''}
                     </span>
                     {rel.images[0] ? (
                       <img

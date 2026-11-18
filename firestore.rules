@@ -39,6 +39,13 @@ service cloud.firestore {
       );
     }
 
+    function isValidHttpsOrEmpty(val, maxLen) {
+      return val is string && val.size() <= maxLen && (
+        val == ''
+        || val.matches('^https://.*')
+      );
+    }
+
     function isValidImageSource(val) {
       return isValidUrlOrPath(val)
         || (
@@ -76,7 +83,7 @@ service cloud.firestore {
         ])
         && data.category in ['trigger', 'lotion', 'mist', 'foam', 'caps']
         && data.figCode is string && data.figCode.size() >= 2 && data.figCode.size() <= 24
-        && data.modelRange is string && data.modelRange.size() >= 2 && data.modelRange.size() <= 64
+        && data.modelRange is string && data.modelRange.size() <= 64
         && data.title is string && data.title.size() >= 2 && data.title.size() <= 120
         && data.uses is string && data.uses.size() >= 4 && data.uses.size() <= 500
         && data.neckSizes is string && data.neckSizes.size() >= 1 && data.neckSizes.size() <= 120
@@ -196,6 +203,46 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidSocialSetting(data) {
+      return data.keys().hasAll([
+          'facebookUrl', 'instagramUrl', 'youtubeUrl', 'linkedinUrl',
+          'tiktokUrl', 'xUrl', 'alibabaUrl', 'telegramUrl',
+          'websiteExtraUrl', 'websiteExtraLabel', 'wechatId',
+          'whatsappNumber', 'businessWhatsapp', 'signatureHeading',
+          'showOnProducts', 'showOnBlogPosts', 'enableShareButtons',
+          'isPublic', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'facebookUrl', 'instagramUrl', 'youtubeUrl', 'linkedinUrl',
+          'tiktokUrl', 'xUrl', 'alibabaUrl', 'telegramUrl',
+          'websiteExtraUrl', 'websiteExtraLabel', 'wechatId',
+          'whatsappNumber', 'businessWhatsapp', 'signatureHeading',
+          'showOnProducts', 'showOnBlogPosts', 'enableShareButtons',
+          'isPublic', 'authorUid', 'createdAt', 'updatedAt'
+        ])
+        && isValidHttpsOrEmpty(data.facebookUrl, 300)
+        && isValidHttpsOrEmpty(data.instagramUrl, 300)
+        && isValidHttpsOrEmpty(data.youtubeUrl, 300)
+        && isValidHttpsOrEmpty(data.linkedinUrl, 300)
+        && isValidHttpsOrEmpty(data.tiktokUrl, 300)
+        && isValidHttpsOrEmpty(data.xUrl, 300)
+        && isValidHttpsOrEmpty(data.alibabaUrl, 300)
+        && isValidHttpsOrEmpty(data.telegramUrl, 300)
+        && isValidHttpsOrEmpty(data.websiteExtraUrl, 300)
+        && data.websiteExtraLabel is string && data.websiteExtraLabel.size() <= 60
+        && data.wechatId is string && data.wechatId.size() <= 120
+        && data.whatsappNumber is string && data.whatsappNumber.size() <= 60
+        && data.businessWhatsapp is string && data.businessWhatsapp.size() <= 300
+        && data.signatureHeading is string && data.signatureHeading.size() <= 140
+        && data.showOnProducts is bool
+        && data.showOnBlogPosts is bool
+        && data.enableShareButtons is bool
+        && data.isPublic is bool
+        && isValidId(data.authorUid) && data.authorUid.size() >= 6
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     // ==================== COLLECTIONS ====================
     match /products/{productId} {
       allow get: if isValidId(productId) && (isAdmin() || (resource != null && existing().published == true));
@@ -307,6 +354,32 @@ service cloud.firestore {
           'versionId', 'chunkIndex', 'data', 'isPublic', 'updatedAt'
         ]);
       allow delete: if isAdmin() && isValidId(chunkId);
+    }
+
+    match /social_settings/{settingId} {
+      allow get: if isValidId(settingId) && (isAdmin() || (resource != null && existing().isPublic == true));
+      allow list: if isAdmin() || existing().isPublic == true;
+      allow create: if isAdmin()
+        && isValidId(settingId)
+        && isValidSocialSetting(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(settingId)
+        && isValidSocialSetting(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'facebookUrl', 'instagramUrl', 'youtubeUrl', 'linkedinUrl',
+          'tiktokUrl', 'xUrl', 'alibabaUrl', 'telegramUrl',
+          'websiteExtraUrl', 'websiteExtraLabel', 'wechatId',
+          'whatsappNumber', 'businessWhatsapp', 'signatureHeading',
+          'showOnProducts', 'showOnBlogPosts', 'enableShareButtons',
+          'isPublic', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(settingId);
     }
   }
 }

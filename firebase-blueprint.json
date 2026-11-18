@@ -18,9 +18,8 @@
         },
         "modelRange": {
           "type": "string",
-          "minLength": 2,
           "maxLength": 64,
-          "description": "Model number range, e.g. TS022 - TS028."
+          "description": "Optional model number range, e.g. TS022 - TS028."
         },
         "title": {
           "type": "string",
@@ -473,6 +472,139 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "SocialSetting": {
+      "title": "SocialSetting",
+      "description": "Official factory social media profiles, WhatsApp numbers, Business WhatsApp, and product/blog sharing preferences managed by the admin.",
+      "type": "object",
+      "properties": {
+        "facebookUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Official Facebook page URL."
+        },
+        "instagramUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Official Instagram profile URL."
+        },
+        "youtubeUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Official YouTube channel URL."
+        },
+        "linkedinUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Official LinkedIn company or profile URL."
+        },
+        "tiktokUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Official TikTok profile URL."
+        },
+        "xUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Official X (Twitter) profile URL."
+        },
+        "alibabaUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Alibaba or B2B marketplace storefront URL."
+        },
+        "telegramUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Telegram channel or direct contact URL."
+        },
+        "websiteExtraUrl": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Additional custom social or directory URL."
+        },
+        "websiteExtraLabel": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Display label for the additional custom link."
+        },
+        "wechatId": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Official WeChat ID handle."
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Primary WhatsApp phone number with country code."
+        },
+        "businessWhatsapp": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Business WhatsApp number or wa.me/message link."
+        },
+        "signatureHeading": {
+          "type": "string",
+          "maxLength": 140,
+          "description": "Heading shown above social links in product descriptions and blog posts."
+        },
+        "showOnProducts": {
+          "type": "boolean",
+          "description": "Automatically display social & WhatsApp links inside product descriptions."
+        },
+        "showOnBlogPosts": {
+          "type": "boolean",
+          "description": "Automatically display social & WhatsApp links inside blog posts."
+        },
+        "enableShareButtons": {
+          "type": "boolean",
+          "description": "Display share buttons and copy-with-links helper on products and blog posts."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Marks social configuration readable by storefront visitors."
+        },
+        "authorUid": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the authenticated admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": [
+        "facebookUrl",
+        "instagramUrl",
+        "youtubeUrl",
+        "linkedinUrl",
+        "tiktokUrl",
+        "xUrl",
+        "alibabaUrl",
+        "telegramUrl",
+        "websiteExtraUrl",
+        "websiteExtraLabel",
+        "wechatId",
+        "whatsappNumber",
+        "businessWhatsapp",
+        "signatureHeading",
+        "showOnProducts",
+        "showOnBlogPosts",
+        "enableShareButtons",
+        "isPublic",
+        "authorUid",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -495,6 +627,10 @@
     "/catalog_chunks/{chunkId}": {
       "schema": { "$ref": "#/entities/CatalogChunk" },
       "description": "Chunked binary slices for admin-uploaded factory catalog PDFs."
+    },
+    "/social_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SocialSetting" },
+      "description": "Official factory social media links, WhatsApp numbers, Business WhatsApp, and product/blog sharing settings."
     }
   }
 }

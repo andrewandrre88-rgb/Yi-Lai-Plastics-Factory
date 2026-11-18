@@ -1,13 +1,15 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { BLOG_POSTS, type BlogPost } from '../data/blogPosts';
 import { LANG_LABELS, type LangCode } from '../i18n/translations';
-import type { CmsCatalogConfigDoc } from '../lib/firebase';
+import type { CmsCatalogConfigDoc, CmsSocialSettingDoc } from '../lib/firebase';
 import { CatalogLink } from './CatalogLink';
+import { SocialLinksBar } from './SocialLinksBar';
 
 interface BlogPostPageProps {
   post: BlogPost;
   allPosts?: BlogPost[];
   catalogConfig?: CmsCatalogConfigDoc | null;
+  socialSettings?: CmsSocialSettingDoc | null;
   lang: LangCode;
   onChangeLang: (lang: LangCode) => void;
   onNavigateHomeSection: (sectionId?: string) => void;
@@ -20,6 +22,7 @@ export function BlogPostPage({
   post,
   allPosts = BLOG_POSTS,
   catalogConfig,
+  socialSettings,
   lang,
   onChangeLang,
   onNavigateHomeSection,
@@ -127,6 +130,17 @@ export function BlogPostPage({
               {copy.paragraphs.map((paragraph, idx) => (
                 <p key={idx}>{paragraph}</p>
               ))}
+            </div>
+
+            {/* Official Social Media, Direct WhatsApp & Share Bar */}
+            <div className="pt-4">
+              <SocialLinksBar
+                socialSettings={socialSettings}
+                contextType="blog"
+                itemTitle={copy.title}
+                itemSummary={copy.summary}
+                hashPath={`#/blog/${encodeURIComponent(post.id)}`}
+              />
             </div>
 
             {/* Previous / Next Post Navigation */}

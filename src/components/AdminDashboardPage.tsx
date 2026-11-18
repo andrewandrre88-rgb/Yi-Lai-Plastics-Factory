@@ -17,6 +17,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Share2,
   ShieldAlert,
   Trash2,
   Upload,
@@ -25,20 +26,24 @@ import { PRODUCT_FAMILIES } from '../data/catalog';
 import { BLOG_POSTS } from '../data/blogPosts';
 import {
   DEFAULT_CATALOG_FILE_NAME,
+  DEFAULT_SOCIAL_SETTING,
   MASKED_ADMIN_EMAIL,
   MAX_CATALOG_PDF_BYTES,
   formatFileSize,
+  formatSocialLinksTextSummary,
   isAuthorizedAdmin,
   maskEmailAddress,
   removeBlogPost,
   removeProduct,
   removeSeoSetting,
+  removeSocialSetting,
   resetCatalogToDefault,
   sanitizeSlugId,
   saveBlogPost,
   saveCatalogExternalUrl,
   saveProduct,
   saveSeoSetting,
+  saveSocialSetting,
   signInAdminWithGoogle,
   signOutAdmin,
   subscribeAllBlogPostsAdmin,
@@ -52,25 +57,29 @@ import {
   type CmsProductInput,
   type CmsSeoSettingDoc,
   type CmsSeoSettingInput,
+  type CmsSocialSettingDoc,
+  type CmsSocialSettingInput,
   type ProductCategory,
   type SeoPageKey,
 } from '../lib/firebase';
 import { DEFAULT_SEO_PRESETS } from '../lib/seo';
 import { CatalogLink } from './CatalogLink';
 import { ImageUploadField, MultiImageUploadField } from './ImageUploadField';
+import { SocialLinksBar } from './SocialLinksBar';
 
 interface AdminDashboardPageProps {
   user: User | null;
   authReady: boolean;
   seoSettings: Record<string, CmsSeoSettingDoc>;
   catalogConfig: CmsCatalogConfigDoc | null;
+  socialSettings: CmsSocialSettingDoc | null;
   onNavigateHomeSection: (sectionId?: string) => void;
   onOpenPostPage: (postId: string) => void;
   onOpenProductPage: (productId: string) => void;
   t: (key: string) => string;
 }
 
-type AdminTab = 'products' | 'blog' | 'seo' | 'catalog';
+type AdminTab = 'products' | 'blog' | 'seo' | 'catalog' | 'social';
 
 const SAMPLE_IMAGE_PATHS = [
   { label: 'Trigger TS001', path: '/images/prod-trigger-ts001.jpg' },
@@ -131,6 +140,7 @@ export function AdminDashboardPage({
   authReady,
   seoSettings,
   catalogConfig,
+  socialSettings,
   onNavigateHomeSection,
   onOpenPostPage,
   onOpenProductPage,
@@ -173,6 +183,10 @@ export function AdminDashboardPage({
   const [catalogProgress, setCatalogProgress] = useState<CatalogUploadProgress | null>(null);
   const [savingCatalog, setSavingCatalog] = useState(false);
   const [dragOverCatalog, setDragOverCatalog] = useState(false);
+
+  // Social Media & Direct Messaging Form
+  const [socialForm, setSocialForm] = useState<CmsSocialSettingInput>(DEFAULT_SOCIAL_SETTING);
+  const [savingSocial, setSavingSocial] = useState(false);
 
   // Automatically sign out unauthorized non-admin Google accounts cleanly
   useEffect(() => {
@@ -246,6 +260,35 @@ export function AdminDashboardPage({
     }
   }, [catalogConfig]);
 
+  // Sync Social Media & Direct Messaging form fields from live Firestore config
+  useEffect(() => {
+    if (socialSettings) {
+      setSocialForm({
+        facebookUrl: socialSettings.facebookUrl || '',
+        instagramUrl: socialSettings.instagramUrl || '',
+        youtubeUrl: socialSettings.youtubeUrl || '',
+        linkedinUrl: socialSettings.linkedinUrl || '',
+        tiktokUrl: socialSettings.tiktokUrl || '',
+        xUrl: socialSettings.xUrl || '',
+        alibabaUrl: socialSettings.alibabaUrl || '',
+        telegramUrl: socialSettings.telegramUrl || '',
+        websiteExtraUrl: socialSettings.websiteExtraUrl || '',
+        websiteExtraLabel: socialSettings.websiteExtraLabel || '',
+        wechatId: socialSettings.wechatId || '',
+        whatsappNumber: socialSettings.whatsappNumber ?? DEFAULT_SOCIAL_SETTING.whatsappNumber,
+        businessWhatsapp: socialSettings.businessWhatsapp || '',
+        signatureHeading:
+          socialSettings.signatureHeading || DEFAULT_SOCIAL_SETTING.signatureHeading,
+        showOnProducts: socialSettings.showOnProducts ?? true,
+        showOnBlogPosts: socialSettings.showOnBlogPosts ?? true,
+        enableShareButtons: socialSettings.enableShareButtons ?? true,
+        isPublic: true,
+      });
+    } else {
+      setSocialForm({ ...DEFAULT_SOCIAL_SETTING });
+    }
+  }, [socialSettings]);
+
   const handleGoogleSignIn = async () => {
     setAuthError(null);
     setSigningIn(true);
@@ -301,7 +344,11 @@ export function AdminDashboardPage({
         image: productForm.images[0] ?? productForm.image,
         images: productForm.images,
         altText: productForm.altText.trim() || `Yi Lai Plastics ${productForm.title}`,
-        quoteValue: productForm.quoteValue.trim() || `${productForm.title} (${productForm.modelRange})`,
+        quoteValue:
+          productForm.quoteValue.trim() ||
+          (productForm.modelRange.trim()
+            ? `${productForm.title} (${productForm.modelRange.trim()})`
+            : productForm.title.trim()),
       });
       setStatusNotice({
         type: 'ok',
@@ -684,6 +731,80 @@ export function AdminDashboardPage({
     }
   };
 
+  // ==================== SOCIAL MEDIA & DIRECT LINKS HANDLERS ====================
+  const handleSaveSocial = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatusNotice(null);
+    setSavingSocial(true);
+    try {
+      await saveSocialSetting(socialForm);
+      setStatusNotice({
+        type: 'ok',
+        text: 'Social media & WhatsApp links saved! They now show automatically on Product Descriptions, Blog Posts, and Share buttons.',
+      });
+    } catch (err) {
+      setStatusNotice({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'Failed to save social media links.',
+      });
+    } finally {
+      setSavingSocial(false);
+    }
+  };
+
+  const handleResetSocial = async () => {
+    setStatusNotice(null);
+    setSavingSocial(true);
+    try {
+      if (socialSettings) {
+        await removeSocialSetting();
+      }
+      setSocialForm({ ...DEFAULT_SOCIAL_SETTING });
+      setStatusNotice({
+        type: 'ok',
+        text: 'Social links reset to built-in factory defaults.',
+      });
+    } catch (err) {
+      setStatusNotice({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'Failed to reset social links.',
+      });
+    } finally {
+      setSavingSocial(false);
+    }
+  };
+
+  const handleInsertSocialIntoProductUses = () => {
+    const summary = formatSocialLinksTextSummary(socialForm);
+    if (!summary) {
+      setStatusNotice({
+        type: 'err',
+        text: 'Add your social or WhatsApp links in 05 · Social Links first.',
+      });
+      return;
+    }
+    setProductForm((prev) => ({
+      ...prev,
+      uses: `${prev.uses.trim()}${prev.uses.trim() ? ' · ' : ''}${summary.replace(/\n+/g, ' · ')}`.slice(
+        0,
+        500
+      ),
+    }));
+  };
+
+  const handleInsertSocialIntoBlogBody = () => {
+    const summary = formatSocialLinksTextSummary(socialForm);
+    if (!summary) {
+      setStatusNotice({
+        type: 'err',
+        text: 'Add your social or WhatsApp links in 05 · Social Links first.',
+      });
+      return;
+    }
+    const block = `${socialForm.signatureHeading || 'Connect & Follow Yi Lai Plastics'}:\n${summary}`;
+    setBlogBodyText((prev) => (prev.trim() ? `${prev.trim()}\n\n${block}` : block));
+  };
+
   // ==================== AUTH GATE VIEW ====================
   if (!authReady) {
     return (
@@ -903,6 +1024,21 @@ export function AdminDashboardPage({
               <FileUp className="w-4 h-4" aria-hidden="true" />
               <span>04 · Catalog PDF</span>
             </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'social'}
+              onClick={() => setActiveTab('social')}
+              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded font-mono-spec text-xs uppercase tracking-wider transition-colors cursor-pointer ${
+                activeTab === 'social'
+                  ? 'bg-[var(--blue)] text-[var(--btn-ink)]'
+                  : 'bg-[var(--surface)] text-[var(--muted)] border border-[var(--line)] hover:border-[var(--blue)] hover:text-[var(--blue)]'
+              }`}
+            >
+              <Share2 className="w-4 h-4" aria-hidden="true" />
+              <span>05 · Social Links</span>
+            </button>
           </div>
         </div>
       </section>
@@ -1034,47 +1170,28 @@ export function AdminDashboardPage({
                     </select>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Fig Code *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        minLength={2}
-                        maxLength={24}
-                        value={productForm.figCode}
-                        onChange={(e) =>
-                          setProductForm((prev) => ({ ...prev, figCode: e.target.value }))
-                        }
-                        placeholder="FIG 1.8"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Model Range *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        minLength={2}
-                        maxLength={64}
-                        value={productForm.modelRange}
-                        onChange={(e) =>
-                          setProductForm((prev) => ({ ...prev, modelRange: e.target.value }))
-                        }
-                        placeholder="TS022 – TS026"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
-                    </div>
+                  <div>
+                    <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                      Fig Code *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      minLength={2}
+                      maxLength={24}
+                      value={productForm.figCode}
+                      onChange={(e) =>
+                        setProductForm((prev) => ({ ...prev, figCode: e.target.value }))
+                      }
+                      placeholder="FIG 1.8"
+                      className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                    />
                   </div>
                 </div>
 
                 <div>
                   <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                    Typical Uses *
+                    Typical Uses &amp; Product Description *
                   </label>
                   <textarea
                     required
@@ -1086,6 +1203,29 @@ export function AdminDashboardPage({
                     placeholder="Industrial degreasers, acid/alkaline cleaners, workshop chemicals."
                     className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
                   />
+                  <div className="mt-2 px-3 py-2 rounded border border-dashed border-[var(--line)] bg-[var(--bg)] flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-[var(--muted)]">
+                      {socialForm.showOnProducts
+                        ? 'Your saved Social & WhatsApp links automatically show in every Product Description & Share bar.'
+                        : 'Social links on Product Descriptions are currently turned off.'}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleInsertSocialIntoProductUses}
+                        className="font-mono-spec text-[11px] uppercase text-[var(--ink)] hover:text-[var(--blue)] underline cursor-pointer"
+                      >
+                        + Append Links Text
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('social')}
+                        className="font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)] cursor-pointer"
+                      >
+                        Manage Social Links →
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1273,7 +1413,8 @@ export function AdminDashboardPage({
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="font-mono-spec text-[11px] uppercase text-[var(--blue)]" dir="ltr">
-                                {item.figCode} · {item.modelRange} ·{' '}
+                                {item.figCode}
+                                {item.modelRange ? ` · ${item.modelRange}` : ''} ·{' '}
                                 <span className={item.published ? 'text-[#138A36] dark:text-[#4ade80]' : 'text-[#9A5B00] dark:text-[#fbbf24]'}>
                                   {item.published ? 'PUBLISHED' : 'DRAFT'}
                                 </span>
@@ -1568,6 +1709,29 @@ export function AdminDashboardPage({
                     placeholder="Write paragraph 1 here...&#10;&#10;Leave an empty line before paragraph 2..."
                     className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
                   />
+                  <div className="mt-2 px-3 py-2 rounded border border-dashed border-[var(--line)] bg-[var(--bg)] flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-[var(--muted)]">
+                      {socialForm.showOnBlogPosts
+                        ? 'Your saved Social & WhatsApp links automatically show at the bottom of every Blog Post & Share bar.'
+                        : 'Social links on Blog Posts are currently turned off.'}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleInsertSocialIntoBlogBody}
+                        className="font-mono-spec text-[11px] uppercase text-[var(--ink)] hover:text-[var(--blue)] underline cursor-pointer"
+                      >
+                        + Insert Links Paragraph
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('social')}
+                        className="font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)] cursor-pointer"
+                      >
+                        Manage Social Links →
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 <ImageUploadField
@@ -2327,6 +2491,381 @@ export function AdminDashboardPage({
                   <p>
                     Updating here automatically replaces the PDF served in the Home Hero, Website Footer, Factory Page, Trigger Sprayers Configurator, Product Detail Sheets, Use Cases Directory, and Technical Blog Notes.
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===================== TAB 5: SOCIAL MEDIA & DIRECT CONTACT LINKS ===================== */}
+          {activeTab === 'social' && (
+            <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 items-start">
+              {/* Left Column: Social Media & WhatsApp Configuration Form */}
+              <form
+                onSubmit={handleSaveSocial}
+                className="bg-[var(--surface)] border border-[var(--line)] rounded p-6 sm:p-7 space-y-6"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[var(--line)]">
+                  <div>
+                    <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--blue)]">
+                      Storefront, Product Descriptions &amp; Blog Sharing
+                    </div>
+                    <h2 className="font-display font-bold uppercase text-2xl text-[var(--ink)]">
+                      Social Media &amp; WhatsApp Links
+                    </h2>
+                    <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+                      Enter your official channels once. Every Product Description, Blog Post, Share button, Social section, and Footer link updates automatically.
+                    </p>
+                  </div>
+
+                  {socialSettings && (
+                    <button
+                      type="button"
+                      disabled={savingSocial}
+                      onClick={handleResetSocial}
+                      className="inline-flex items-center gap-1.5 font-mono-spec text-xs uppercase text-[var(--muted)] hover:text-[var(--red)] cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Reset Defaults</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Group 1: Direct WhatsApp & Business WhatsApp */}
+                <div className="p-4 rounded border border-[var(--line)] bg-[var(--bg)] space-y-4">
+                  <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[#25D366]">
+                    Direct Messaging (WhatsApp, Business WhatsApp &amp; WeChat)
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        WhatsApp Number
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={60}
+                        value={socialForm.whatsappNumber}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))
+                        }
+                        placeholder="+86 137 5705 0848"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Business WhatsApp (Number or wa.me Link)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.businessWhatsapp}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, businessWhatsapp: e.target.value }))
+                        }
+                        placeholder="+86 138 0000 0000 or https://wa.me/message/..."
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        WeChat ID
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={120}
+                        value={socialForm.wechatId}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, wechatId: e.target.value }))
+                        }
+                        placeholder="e.g. YiLaiPlastics_Sales"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Telegram Link or @Handle
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.telegramUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, telegramUrl: e.target.value }))
+                        }
+                        placeholder="https://t.me/yilaiplastics or @yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group 2: Social Media Profiles */}
+                <div className="space-y-4">
+                  <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--blue)]">
+                    Social Media &amp; Marketplace Profiles
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Facebook Page URL
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.facebookUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, facebookUrl: e.target.value }))
+                        }
+                        placeholder="https://facebook.com/yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Instagram URL or @Handle
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.instagramUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, instagramUrl: e.target.value }))
+                        }
+                        placeholder="https://instagram.com/yilaiplastics or @yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        YouTube Channel URL or @Handle
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.youtubeUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, youtubeUrl: e.target.value }))
+                        }
+                        placeholder="https://youtube.com/@yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        LinkedIn Company / Profile URL
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.linkedinUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, linkedinUrl: e.target.value }))
+                        }
+                        placeholder="https://linkedin.com/company/yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        TikTok URL or @Handle
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.tiktokUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))
+                        }
+                        placeholder="https://tiktok.com/@yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        X (Twitter) URL or @Handle
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.xUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, xUrl: e.target.value }))
+                        }
+                        placeholder="https://x.com/yilaiplastics"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Alibaba / Made-in-China Storefront URL
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.alibabaUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, alibabaUrl: e.target.value }))
+                        }
+                        placeholder="https://yilaiplastics.en.alibaba.com"
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Other Platform Label (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={60}
+                        value={socialForm.websiteExtraLabel}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, websiteExtraLabel: e.target.value }))
+                        }
+                        placeholder="e.g. Pinterest / Linktree"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                        Other Platform URL (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={300}
+                        value={socialForm.websiteExtraUrl}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, websiteExtraUrl: e.target.value }))
+                        }
+                        placeholder="https://..."
+                        dir="ltr"
+                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Group 3: Product Description & Blog Post Display Behavior */}
+                <div className="p-4 rounded border border-[var(--line)] bg-[var(--bg)] space-y-3">
+                  <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--blue)]">
+                    Auto-Display &amp; Sharing on Products and Blog Posts
+                  </div>
+
+                  <div>
+                    <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
+                      Section Heading Shown Above Links
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={140}
+                      value={socialForm.signatureHeading}
+                      onChange={(e) =>
+                        setSocialForm((prev) => ({ ...prev, signatureHeading: e.target.value }))
+                      }
+                      placeholder="Connect & Follow Yi Lai Plastics"
+                      className="w-full px-3 py-2 rounded border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                    />
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <label className="flex items-center gap-2.5 text-sm text-[var(--ink)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={socialForm.showOnProducts}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, showOnProducts: e.target.checked }))
+                        }
+                      />
+                      <span>Show my social &amp; WhatsApp links inside every Product Description</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 text-sm text-[var(--ink)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={socialForm.showOnBlogPosts}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({ ...prev, showOnBlogPosts: e.target.checked }))
+                        }
+                      />
+                      <span>Show my social &amp; WhatsApp links inside every Blog Post</span>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 text-sm text-[var(--ink)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={socialForm.enableShareButtons}
+                        onChange={(e) =>
+                          setSocialForm((prev) => ({
+                            ...prev,
+                            enableShareButtons: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>
+                        Enable 1-click Share buttons &amp; &ldquo;Copy Post + My Links&rdquo; caption helper
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-1 flex flex-wrap items-center gap-3">
+                  <button
+                    type="submit"
+                    disabled={savingSocial}
+                    className="inline-flex items-center gap-2 bg-[var(--red)] text-white font-semibold text-sm px-6 py-3 rounded hover:-translate-y-px transition-transform disabled:opacity-60 cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" aria-hidden="true" />
+                    <span>{savingSocial ? 'Saving Links…' : 'Save Social & WhatsApp Links'}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Right Column: Live Product / Blog Preview */}
+              <div className="space-y-5">
+                <div className="bg-[var(--surface)] border-[1.5px] border-[var(--blue)] rounded p-6 space-y-4">
+                  <div className="pb-3 border-b border-[var(--line)]">
+                    <div className="font-mono-spec text-[10px] uppercase tracking-[0.1em] text-[var(--blue)]">
+                      Live Product Description &amp; Blog Preview
+                    </div>
+                    <h3 className="font-display font-bold uppercase text-xl text-[var(--ink)]">
+                      How Visitors See &amp; Share Your Links
+                    </h3>
+                  </div>
+
+                  <SocialLinksBar
+                    socialSettings={socialForm}
+                    contextType="product"
+                    itemTitle="Trigger Sprayer Series (TS001 – TS021)"
+                    itemSummary="PP trigger sprayers for household cleaners, car care, and garden bottles."
+                    hashPath="#/products/trigger-sprayer"
+                  />
+
+                  <div className="text-xs text-[var(--muted)] leading-relaxed">
+                    Clicking <strong className="text-[var(--ink)]">Copy Post + My Links</strong> copies a ready-to-paste caption containing the product or blog title, direct URL, and every social/WhatsApp channel you filled in above—ready to paste straight into Facebook, Instagram, LinkedIn, WhatsApp, or WeChat.
+                  </div>
                 </div>
               </div>
             </div>
