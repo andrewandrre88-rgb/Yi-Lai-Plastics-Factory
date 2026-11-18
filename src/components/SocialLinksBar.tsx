@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import {
   DEFAULT_SOCIAL_SETTING,
+  ensureArrayLength5,
   formatSocialLinksTextSummary,
   resolveWhatsAppChatUrl,
   type CmsSocialSettingDoc,
@@ -34,7 +35,7 @@ export function SocialLinksBar({
 }: SocialLinksBarProps) {
   const [copiedBundle, setCopiedBundle] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedWeChat, setCopiedWeChat] = useState(false);
+  const [copiedWeChatKey, setCopiedWeChatKey] = useState<string | null>(null);
 
   const cfg: CmsSocialSettingInput = {
     ...DEFAULT_SOCIAL_SETTING,
@@ -55,8 +56,69 @@ export function SocialLinksBar({
       ? `Hello Yi Lai Plastics, I am interested in "${itemTitle}" (${pageUrl}). Could you share pricing & sample details?`
       : `Hello Yi Lai Plastics, I read "${itemTitle}" (${pageUrl}) and would like technical / quote assistance.`;
 
-  const whatsappDirectUrl = resolveWhatsAppChatUrl(cfg.whatsappNumber, directWaInquiryText);
-  const businessWaDirectUrl = resolveWhatsAppChatUrl(cfg.businessWhatsapp, directWaInquiryText);
+  const whatsappNums = ensureArrayLength5(cfg.whatsappNumbers, (cfg as any).whatsappNumber);
+  const businessWaNums = ensureArrayLength5(cfg.businessWhatsapps, (cfg as any).businessWhatsapp);
+  const fbUrls = ensureArrayLength5(cfg.facebookUrls, (cfg as any).facebookUrl);
+  const igUrls = ensureArrayLength5(cfg.instagramUrls, (cfg as any).instagramUrl);
+  const ytUrls = ensureArrayLength5(cfg.youtubeUrls, (cfg as any).youtubeUrl);
+  const liUrls = ensureArrayLength5(cfg.linkedinUrls, (cfg as any).linkedinUrl);
+  const ttUrls = ensureArrayLength5(cfg.tiktokUrls, (cfg as any).tiktokUrl);
+  const xUrls = ensureArrayLength5(cfg.xUrls, (cfg as any).xUrl);
+  const aliUrls = ensureArrayLength5(cfg.alibabaUrls, (cfg as any).alibabaUrl);
+  const tgUrls = ensureArrayLength5(cfg.telegramUrls, (cfg as any).telegramUrl);
+  const extraUrls = ensureArrayLength5(cfg.websiteExtraUrls, (cfg as any).websiteExtraUrl);
+  const extraLabels = ensureArrayLength5(cfg.websiteExtraLabels, (cfg as any).websiteExtraLabel);
+  const wechatIds = ensureArrayLength5(cfg.wechatIds, (cfg as any).wechatId);
+
+  const externalChannels: { key: string; label: string; url: string; badgeClass?: string }[] = [];
+
+  whatsappNums.forEach((num, idx) => {
+    const waUrl = resolveWhatsAppChatUrl(num, directWaInquiryText);
+    if (waUrl) {
+      externalChannels.push({
+        key: `whatsapp-${idx}`,
+        label: `WhatsApp ${idx + 1} (${num.trim()})`,
+        url: waUrl,
+        badgeClass: 'border-[#25D366]/60 bg-[#25D366]/10 text-[var(--ink)] hover:border-[#25D366]',
+      });
+    }
+  });
+
+  businessWaNums.forEach((num, idx) => {
+    const bwaUrl = resolveWhatsAppChatUrl(num, directWaInquiryText);
+    if (bwaUrl) {
+      externalChannels.push({
+        key: `business-wa-${idx}`,
+        label: num.trim().startsWith('http') || num.trim().startsWith('wa.me')
+          ? `Business WhatsApp ${idx + 1}`
+          : `Business WhatsApp ${idx + 1} (${num.trim()})`,
+        url: bwaUrl,
+        badgeClass: 'border-[#128C7E]/60 bg-[#128C7E]/10 text-[var(--ink)] hover:border-[#128C7E]',
+      });
+    }
+  });
+
+  fbUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `facebook-${idx}`, label: `Facebook ${idx + 1}`, url }); });
+  igUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `instagram-${idx}`, label: `Instagram ${idx + 1}`, url }); });
+  ytUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `youtube-${idx}`, label: `YouTube ${idx + 1}`, url }); });
+  liUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `linkedin-${idx}`, label: `LinkedIn ${idx + 1}`, url }); });
+  ttUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `tiktok-${idx}`, label: `TikTok ${idx + 1}`, url }); });
+  xUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `x-${idx}`, label: `X ${idx + 1}`, url }); });
+  aliUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `alibaba-${idx}`, label: `Alibaba Store ${idx + 1}`, url }); });
+  tgUrls.forEach((url, idx) => { if (url.trim()) externalChannels.push({ key: `telegram-${idx}`, label: `Telegram ${idx + 1}`, url }); });
+  extraUrls.forEach((url, idx) => {
+    if (url.trim()) {
+      const label = extraLabels[idx]?.trim() || `Official Link ${idx + 1}`;
+      externalChannels.push({ key: `extra-${idx}`, label, url });
+    }
+  });
+
+  const validWeChats = wechatIds.map((id, idx) => ({ id: id.trim(), idx })).filter(item => item.id);
+  const hasAnyOfficialChannel = externalChannels.length > 0 || validWeChats.length > 0;
+
+  if ((!showChannels || !hasAnyOfficialChannel) && !showSharing) {
+    return null;
+  }
 
   const socialSummaryText = formatSocialLinksTextSummary(cfg);
   const fullShareCaption = [
@@ -79,52 +141,6 @@ export function SocialLinksBar({
     `${itemTitle} — Yi Lai Plastics`
   )}&url=${encodeURIComponent(pageUrl)}`;
 
-  const externalChannels: { key: string; label: string; url: string; badgeClass?: string }[] = [
-    whatsappDirectUrl
-      ? {
-          key: 'whatsapp',
-          label: `WhatsApp (${cfg.whatsappNumber.trim()})`,
-          url: whatsappDirectUrl,
-          badgeClass:
-            'border-[#25D366]/60 bg-[#25D366]/10 text-[var(--ink)] hover:border-[#25D366]',
-        }
-      : null,
-    businessWaDirectUrl
-      ? {
-          key: 'business-wa',
-          label:
-            cfg.businessWhatsapp.trim().startsWith('http') ||
-            cfg.businessWhatsapp.trim().startsWith('wa.me')
-              ? 'Business WhatsApp'
-              : `Business WhatsApp (${cfg.businessWhatsapp.trim()})`,
-          url: businessWaDirectUrl,
-          badgeClass:
-            'border-[#128C7E]/60 bg-[#128C7E]/10 text-[var(--ink)] hover:border-[#128C7E]',
-        }
-      : null,
-    cfg.facebookUrl ? { key: 'facebook', label: 'Facebook', url: cfg.facebookUrl } : null,
-    cfg.instagramUrl ? { key: 'instagram', label: 'Instagram', url: cfg.instagramUrl } : null,
-    cfg.youtubeUrl ? { key: 'youtube', label: 'YouTube', url: cfg.youtubeUrl } : null,
-    cfg.linkedinUrl ? { key: 'linkedin', label: 'LinkedIn', url: cfg.linkedinUrl } : null,
-    cfg.tiktokUrl ? { key: 'tiktok', label: 'TikTok', url: cfg.tiktokUrl } : null,
-    cfg.xUrl ? { key: 'x', label: 'X / Twitter', url: cfg.xUrl } : null,
-    cfg.alibabaUrl ? { key: 'alibaba', label: 'Alibaba Store', url: cfg.alibabaUrl } : null,
-    cfg.telegramUrl ? { key: 'telegram', label: 'Telegram', url: cfg.telegramUrl } : null,
-    cfg.websiteExtraUrl
-      ? {
-          key: 'extra',
-          label: cfg.websiteExtraLabel.trim() || 'Official Link',
-          url: cfg.websiteExtraUrl,
-        }
-      : null,
-  ].filter((v): v is NonNullable<typeof v> => v !== null);
-
-  const hasAnyOfficialChannel = externalChannels.length > 0 || Boolean(cfg.wechatId.trim());
-
-  if ((!showChannels || !hasAnyOfficialChannel) && !showSharing) {
-    return null;
-  }
-
   const handleCopyFullPost = async () => {
     try {
       await navigator.clipboard.writeText(fullShareCaption);
@@ -145,12 +161,11 @@ export function SocialLinksBar({
     }
   };
 
-  const handleCopyWeChat = async () => {
-    if (!cfg.wechatId.trim()) return;
+  const handleCopyWeChat = async (id: string, key: string) => {
     try {
-      await navigator.clipboard.writeText(cfg.wechatId.trim());
-      setCopiedWeChat(true);
-      window.setTimeout(() => setCopiedWeChat(false), 2000);
+      await navigator.clipboard.writeText(id);
+      setCopiedWeChatKey(key);
+      window.setTimeout(() => setCopiedWeChatKey(null), 2000);
     } catch {
       // Clipboard unavailable
     }
@@ -158,7 +173,6 @@ export function SocialLinksBar({
 
   return (
     <div className="border border-[var(--line)] rounded-[4px] bg-[var(--bg)] p-4 sm:p-5 space-y-4">
-      {/* Official Factory Social & Direct Messaging Links */}
       {showChannels && hasAnyOfficialChannel && (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between gap-2">
@@ -180,7 +194,7 @@ export function SocialLinksBar({
                   'border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--blue)] hover:text-[var(--blue)]'
                 }`}
               >
-                {ch.key === 'whatsapp' || ch.key === 'business-wa' ? (
+                {ch.key.includes('whatsapp') ? (
                   <MessageSquare className="w-3.5 h-3.5 text-[#25D366] shrink-0" aria-hidden="true" />
                 ) : (
                   <Globe className="w-3.5 h-3.5 text-[var(--blue)] shrink-0" aria-hidden="true" />
@@ -190,29 +204,33 @@ export function SocialLinksBar({
               </a>
             ))}
 
-            {cfg.wechatId.trim() && (
-              <button
-                type="button"
-                onClick={handleCopyWeChat}
-                dir="ltr"
-                title="Click to copy WeChat ID"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--blue)] hover:text-[var(--blue)] font-mono-spec text-xs transition-colors cursor-pointer"
-              >
-                {copiedWeChat ? (
-                  <Check className="w-3.5 h-3.5 text-[#138A36] shrink-0" aria-hidden="true" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5 text-[var(--blue)] shrink-0" aria-hidden="true" />
-                )}
-                <span>
-                  {copiedWeChat ? 'WeChat ID Copied!' : `WeChat: ${cfg.wechatId.trim()}`}
-                </span>
-              </button>
-            )}
+            {validWeChats.map((wc) => {
+              const key = `wechat-${wc.idx}`;
+              const isCopied = copiedWeChatKey === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleCopyWeChat(wc.id, key)}
+                  dir="ltr"
+                  title="Click to copy WeChat ID"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--blue)] hover:text-[var(--blue)] font-mono-spec text-xs transition-colors cursor-pointer"
+                >
+                  {isCopied ? (
+                    <Check className="w-3.5 h-3.5 text-[#138A36] shrink-0" aria-hidden="true" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-[var(--blue)] shrink-0" aria-hidden="true" />
+                  )}
+                  <span>
+                    {isCopied ? 'WeChat ID Copied!' : `WeChat ${wc.idx + 1}: ${wc.id}`}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Share This Product / Blog Post + Copy Caption with Social Links */}
       {showSharing && (
         <div
           className={`space-y-2.5 ${

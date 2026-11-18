@@ -29,6 +29,7 @@ import {
   DEFAULT_SOCIAL_SETTING,
   MASKED_ADMIN_EMAIL,
   MAX_CATALOG_PDF_BYTES,
+  ensureArrayLength5,
   formatFileSize,
   formatSocialLinksTextSummary,
   isAuthorizedAdmin,
@@ -263,25 +264,25 @@ export function AdminDashboardPage({
   // Sync Social Media & Direct Messaging form fields from live Firestore config
   useEffect(() => {
     if (socialSettings) {
+      const raw = socialSettings as any;
       setSocialForm({
-        facebookUrl: socialSettings.facebookUrl || '',
-        instagramUrl: socialSettings.instagramUrl || '',
-        youtubeUrl: socialSettings.youtubeUrl || '',
-        linkedinUrl: socialSettings.linkedinUrl || '',
-        tiktokUrl: socialSettings.tiktokUrl || '',
-        xUrl: socialSettings.xUrl || '',
-        alibabaUrl: socialSettings.alibabaUrl || '',
-        telegramUrl: socialSettings.telegramUrl || '',
-        websiteExtraUrl: socialSettings.websiteExtraUrl || '',
-        websiteExtraLabel: socialSettings.websiteExtraLabel || '',
-        wechatId: socialSettings.wechatId || '',
-        whatsappNumber: socialSettings.whatsappNumber ?? DEFAULT_SOCIAL_SETTING.whatsappNumber,
-        businessWhatsapp: socialSettings.businessWhatsapp || '',
-        signatureHeading:
-          socialSettings.signatureHeading || DEFAULT_SOCIAL_SETTING.signatureHeading,
-        showOnProducts: socialSettings.showOnProducts ?? true,
-        showOnBlogPosts: socialSettings.showOnBlogPosts ?? true,
-        enableShareButtons: socialSettings.enableShareButtons ?? true,
+        facebookUrls: ensureArrayLength5(raw.facebookUrls, raw.facebookUrl),
+        instagramUrls: ensureArrayLength5(raw.instagramUrls, raw.instagramUrl),
+        youtubeUrls: ensureArrayLength5(raw.youtubeUrls, raw.youtubeUrl),
+        linkedinUrls: ensureArrayLength5(raw.linkedinUrls, raw.linkedinUrl),
+        tiktokUrls: ensureArrayLength5(raw.tiktokUrls, raw.tiktokUrl),
+        xUrls: ensureArrayLength5(raw.xUrls, raw.xUrl),
+        alibabaUrls: ensureArrayLength5(raw.alibabaUrls, raw.alibabaUrl),
+        telegramUrls: ensureArrayLength5(raw.telegramUrls, raw.telegramUrl),
+        websiteExtraUrls: ensureArrayLength5(raw.websiteExtraUrls, raw.websiteExtraUrl),
+        websiteExtraLabels: ensureArrayLength5(raw.websiteExtraLabels, raw.websiteExtraLabel),
+        wechatIds: ensureArrayLength5(raw.wechatIds, raw.wechatId),
+        whatsappNumbers: ensureArrayLength5(raw.whatsappNumbers, raw.whatsappNumber || '+86 137 5705 0848'),
+        businessWhatsapps: ensureArrayLength5(raw.businessWhatsapps, raw.businessWhatsapp),
+        signatureHeading: raw.signatureHeading || DEFAULT_SOCIAL_SETTING.signatureHeading,
+        showOnProducts: raw.showOnProducts ?? true,
+        showOnBlogPosts: raw.showOnBlogPosts ?? true,
+        enableShareButtons: raw.enableShareButtons ?? true,
         isPublic: true,
       });
     } else {
@@ -732,6 +733,15 @@ export function AdminDashboardPage({
   };
 
   // ==================== SOCIAL MEDIA & DIRECT LINKS HANDLERS ====================
+  const updateSocialArr = (field: keyof CmsSocialSettingInput, index: number, val: string) => {
+    setSocialForm((prev) => {
+      const currentArr = ensureArrayLength5(prev[field]);
+      const nextArr = [...currentArr];
+      nextArr[index] = val;
+      return { ...prev, [field]: nextArr };
+    });
+  };
+
   const handleSaveSocial = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatusNotice(null);
@@ -2530,240 +2540,257 @@ export function AdminDashboardPage({
                   )}
                 </div>
 
-                {/* Group 1: Direct WhatsApp & Business WhatsApp */}
-                <div className="p-4 rounded border border-[var(--line)] bg-[var(--bg)] space-y-4">
+                {/* Group 1: Direct Messaging (WhatsApp, Business WhatsApp, WeChat & Telegram - Up to 5 accounts each) */}
+                <div className="p-5 rounded border border-[var(--line)] bg-[var(--bg)] space-y-6">
                   <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[#25D366]">
-                    Direct Messaging (WhatsApp, Business WhatsApp &amp; WeChat)
+                    Direct Messaging Accounts (Up to 5 accounts per platform)
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        WhatsApp Number
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* WhatsApp Numbers */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        WhatsApp Numbers (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={60}
-                        value={socialForm.whatsappNumber}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))
-                        }
-                        placeholder="+86 137 5705 0848"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`wa-${idx}`}
+                          type="text"
+                          maxLength={60}
+                          value={socialForm.whatsappNumbers[idx] || ''}
+                          onChange={(e) => updateSocialArr('whatsappNumbers', idx, e.target.value)}
+                          placeholder={`WhatsApp Account ${idx + 1} (+86 ...)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Business WhatsApp (Number or wa.me Link)
+                    {/* Business WhatsApp */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        Business WhatsApps (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.businessWhatsapp}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, businessWhatsapp: e.target.value }))
-                        }
-                        placeholder="+86 138 0000 0000 or https://wa.me/message/..."
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`bwa-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.businessWhatsapps[idx] || ''}
+                          onChange={(e) => updateSocialArr('businessWhatsapps', idx, e.target.value)}
+                          placeholder={`Business WA Account ${idx + 1} or wa.me/...`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        WeChat ID
+                    {/* WeChat IDs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        WeChat IDs (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={120}
-                        value={socialForm.wechatId}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, wechatId: e.target.value }))
-                        }
-                        placeholder="e.g. YiLaiPlastics_Sales"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`wc-${idx}`}
+                          type="text"
+                          maxLength={120}
+                          value={socialForm.wechatIds[idx] || ''}
+                          onChange={(e) => updateSocialArr('wechatIds', idx, e.target.value)}
+                          placeholder={`WeChat ID ${idx + 1} (e.g. YiLaiPlastics_${idx + 1})`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Telegram Link or @Handle
+                    {/* Telegram Links */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        Telegram Links / Handles (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.telegramUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, telegramUrl: e.target.value }))
-                        }
-                        placeholder="https://t.me/yilaiplastics or @yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`tg-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.telegramUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('telegramUrls', idx, e.target.value)}
+                          placeholder={`Telegram ${idx + 1} (https://t.me/... or @handle)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Group 2: Social Media Profiles */}
-                <div className="space-y-4">
+                {/* Group 2: Social Media & Marketplace Profiles (Up to 5 accounts per platform) */}
+                <div className="space-y-6">
                   <div className="font-mono-spec text-[11px] uppercase tracking-wider text-[var(--blue)]">
-                    Social Media &amp; Marketplace Profiles
+                    Social Media &amp; Marketplace Profiles (Up to 5 accounts per platform)
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Facebook Page URL
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Facebook URLs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        Facebook URLs (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.facebookUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, facebookUrl: e.target.value }))
-                        }
-                        placeholder="https://facebook.com/yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`fb-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.facebookUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('facebookUrls', idx, e.target.value)}
+                          placeholder={`Facebook Account ${idx + 1} (https://facebook.com/...)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Instagram URL or @Handle
+                    {/* Instagram URLs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        Instagram URLs / Handles (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.instagramUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, instagramUrl: e.target.value }))
-                        }
-                        placeholder="https://instagram.com/yilaiplastics or @yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`ig-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.instagramUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('instagramUrls', idx, e.target.value)}
+                          placeholder={`Instagram Account ${idx + 1} (https://instagram.com/... or @handle)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        YouTube Channel URL or @Handle
+                    {/* YouTube URLs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        YouTube Channels (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.youtubeUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, youtubeUrl: e.target.value }))
-                        }
-                        placeholder="https://youtube.com/@yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`yt-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.youtubeUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('youtubeUrls', idx, e.target.value)}
+                          placeholder={`YouTube Channel ${idx + 1} (https://youtube.com/@...)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        LinkedIn Company / Profile URL
+                    {/* LinkedIn URLs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        LinkedIn Profiles / Companies (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.linkedinUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, linkedinUrl: e.target.value }))
-                        }
-                        placeholder="https://linkedin.com/company/yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`li-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.linkedinUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('linkedinUrls', idx, e.target.value)}
+                          placeholder={`LinkedIn Account ${idx + 1} (https://linkedin.com/in/... or /company/...)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        TikTok URL or @Handle
+                    {/* TikTok URLs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        TikTok URLs / Handles (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.tiktokUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, tiktokUrl: e.target.value }))
-                        }
-                        placeholder="https://tiktok.com/@yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`tt-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.tiktokUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('tiktokUrls', idx, e.target.value)}
+                          placeholder={`TikTok Account ${idx + 1} (https://tiktok.com/@...)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        X (Twitter) URL or @Handle
+                    {/* X (Twitter) URLs */}
+                    <div className="space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        X (Twitter) URLs / Handles (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.xUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, xUrl: e.target.value }))
-                        }
-                        placeholder="https://x.com/yilaiplastics"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`x-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.xUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('xUrls', idx, e.target.value)}
+                          placeholder={`X Account ${idx + 1} (https://x.com/...)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Alibaba / Made-in-China Storefront URL
+                    {/* Alibaba Storefront URLs */}
+                    <div className="lg:col-span-2 space-y-2">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)]">
+                        Alibaba Storefront URLs (Accounts 1 – 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.alibabaUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, alibabaUrl: e.target.value }))
-                        }
-                        placeholder="https://yilaiplastics.en.alibaba.com"
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <input
+                          key={`ali-${idx}`}
+                          type="text"
+                          maxLength={300}
+                          value={socialForm.alibabaUrls[idx] || ''}
+                          onChange={(e) => updateSocialArr('alibabaUrls', idx, e.target.value)}
+                          placeholder={`Alibaba Store ${idx + 1} (https://yilaiplastics.en.alibaba.com)`}
+                          dir="ltr"
+                          className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                        />
+                      ))}
                     </div>
 
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Other Platform Label (Optional)
+                    {/* Other Platforms (Labels & URLs 1-5) */}
+                    <div className="lg:col-span-2 space-y-3 pt-4 border-t border-[var(--line)]">
+                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--blue)]">
+                        Other Custom Platforms (Labels &amp; URLs - Up to 5)
                       </label>
-                      <input
-                        type="text"
-                        maxLength={60}
-                        value={socialForm.websiteExtraLabel}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, websiteExtraLabel: e.target.value }))
-                        }
-                        placeholder="e.g. Pinterest / Linktree"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-mono-spec text-[11px] uppercase text-[var(--muted)] mb-1">
-                        Other Platform URL (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={300}
-                        value={socialForm.websiteExtraUrl}
-                        onChange={(e) =>
-                          setSocialForm((prev) => ({ ...prev, websiteExtraUrl: e.target.value }))
-                        }
-                        placeholder="https://..."
-                        dir="ltr"
-                        className="w-full px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
-                      />
+                      {[0, 1, 2, 3, 4].map((idx) => (
+                        <div key={`extra-${idx}`} className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-2">
+                          <input
+                            type="text"
+                            maxLength={60}
+                            value={socialForm.websiteExtraLabels[idx] || ''}
+                            onChange={(e) => updateSocialArr('websiteExtraLabels', idx, e.target.value)}
+                            placeholder={`Platform ${idx + 1} Label (e.g. Pinterest)`}
+                            className="px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--blue)]"
+                          />
+                          <input
+                            type="text"
+                            maxLength={300}
+                            value={socialForm.websiteExtraUrls[idx] || ''}
+                            onChange={(e) => updateSocialArr('websiteExtraUrls', idx, e.target.value)}
+                            placeholder={`Platform ${idx + 1} URL (https://...)`}
+                            dir="ltr"
+                            className="px-3 py-2 rounded border-[1.5px] border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] font-mono-spec text-sm focus:outline-none focus:border-[var(--blue)]"
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

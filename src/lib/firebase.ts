@@ -1026,19 +1026,19 @@ export async function resetCatalogToDefault(buttonLabel = ''): Promise<void> {
 
 // ==================== SOCIAL MEDIA & DIRECT MESSAGING LINKS ====================
 export interface CmsSocialSettingInput {
-  facebookUrl: string;
-  instagramUrl: string;
-  youtubeUrl: string;
-  linkedinUrl: string;
-  tiktokUrl: string;
-  xUrl: string;
-  alibabaUrl: string;
-  telegramUrl: string;
-  websiteExtraUrl: string;
-  websiteExtraLabel: string;
-  wechatId: string;
-  whatsappNumber: string;
-  businessWhatsapp: string;
+  facebookUrls: string[];
+  instagramUrls: string[];
+  youtubeUrls: string[];
+  linkedinUrls: string[];
+  tiktokUrls: string[];
+  xUrls: string[];
+  alibabaUrls: string[];
+  telegramUrls: string[];
+  websiteExtraUrls: string[];
+  websiteExtraLabels: string[];
+  wechatIds: string[];
+  whatsappNumbers: string[];
+  businessWhatsapps: string[];
   signatureHeading: string;
   showOnProducts: boolean;
   showOnBlogPosts: boolean;
@@ -1052,25 +1052,39 @@ export interface CmsSocialSettingDoc extends CmsSocialSettingInput {
 }
 
 export const DEFAULT_SOCIAL_SETTING: CmsSocialSettingInput = {
-  facebookUrl: '',
-  instagramUrl: '',
-  youtubeUrl: '',
-  linkedinUrl: '',
-  tiktokUrl: '',
-  xUrl: '',
-  alibabaUrl: '',
-  telegramUrl: '',
-  websiteExtraUrl: '',
-  websiteExtraLabel: '',
-  wechatId: '',
-  whatsappNumber: '+86 137 5705 0848',
-  businessWhatsapp: '',
+  facebookUrls: ['', '', '', '', ''],
+  instagramUrls: ['', '', '', '', ''],
+  youtubeUrls: ['', '', '', '', ''],
+  linkedinUrls: ['', '', '', '', ''],
+  tiktokUrls: ['', '', '', '', ''],
+  xUrls: ['', '', '', '', ''],
+  alibabaUrls: ['', '', '', '', ''],
+  telegramUrls: ['', '', '', '', ''],
+  websiteExtraUrls: ['', '', '', '', ''],
+  websiteExtraLabels: ['', '', '', '', ''],
+  wechatIds: ['', '', '', '', ''],
+  whatsappNumbers: ['+86 137 5705 0848', '', '', '', ''],
+  businessWhatsapps: ['', '', '', '', ''],
   signatureHeading: 'Connect & Follow Yi Lai Plastics',
   showOnProducts: true,
   showOnBlogPosts: true,
   enableShareButtons: true,
   isPublic: true,
 };
+
+export function ensureArrayLength5(arr?: unknown, singleFallback?: string): string[] {
+  const result = ['', '', '', '', ''];
+  if (Array.isArray(arr)) {
+    for (let i = 0; i < 5; i++) {
+      if (typeof arr[i] === 'string') {
+        result[i] = (arr[i] as string).trim();
+      }
+    }
+  } else if (typeof singleFallback === 'string' && singleFallback.trim()) {
+    result[0] = singleFallback.trim();
+  }
+  return result;
+}
 
 export function normalizeHttpsSocialUrl(raw: string, handlePrefixUrl?: string): string {
   const trimmed = raw.trim().slice(0, 300);
@@ -1114,33 +1128,54 @@ export function resolveWhatsAppChatUrl(rawNumberOrLink: string, prefillText?: st
 export function formatSocialLinksTextSummary(
   social?: CmsSocialSettingInput | CmsSocialSettingDoc | null
 ): string {
-  const active = social ?? DEFAULT_SOCIAL_SETTING;
+  const raw = social as any;
+  const active = {
+    facebookUrls: ensureArrayLength5(raw?.facebookUrls, raw?.facebookUrl),
+    instagramUrls: ensureArrayLength5(raw?.instagramUrls, raw?.instagramUrl),
+    youtubeUrls: ensureArrayLength5(raw?.youtubeUrls, raw?.youtubeUrl),
+    linkedinUrls: ensureArrayLength5(raw?.linkedinUrls, raw?.linkedinUrl),
+    tiktokUrls: ensureArrayLength5(raw?.tiktokUrls, raw?.tiktokUrl),
+    xUrls: ensureArrayLength5(raw?.xUrls, raw?.xUrl),
+    alibabaUrls: ensureArrayLength5(raw?.alibabaUrls, raw?.alibabaUrl),
+    telegramUrls: ensureArrayLength5(raw?.telegramUrls, raw?.telegramUrl),
+    websiteExtraUrls: ensureArrayLength5(raw?.websiteExtraUrls, raw?.websiteExtraUrl),
+    websiteExtraLabels: ensureArrayLength5(raw?.websiteExtraLabels, raw?.websiteExtraLabel),
+    wechatIds: ensureArrayLength5(raw?.wechatIds, raw?.wechatId),
+    whatsappNumbers: ensureArrayLength5(raw?.whatsappNumbers, raw?.whatsappNumber || '+86 137 5705 0848'),
+    businessWhatsapps: ensureArrayLength5(raw?.businessWhatsapps, raw?.businessWhatsapp),
+  };
   const lines: string[] = [];
-  if (active.whatsappNumber.trim()) {
-    const waUrl = resolveWhatsAppChatUrl(active.whatsappNumber);
-    lines.push(`WhatsApp: ${active.whatsappNumber.trim()}${waUrl ? ` (${waUrl})` : ''}`);
-  }
-  if (active.businessWhatsapp.trim()) {
-    const bwaUrl = resolveWhatsAppChatUrl(active.businessWhatsapp);
-    lines.push(
-      `Business WhatsApp: ${active.businessWhatsapp.trim()}${
-        bwaUrl && bwaUrl !== active.businessWhatsapp.trim() ? ` (${bwaUrl})` : ''
-      }`
-    );
-  }
-  if (active.facebookUrl.trim()) lines.push(`Facebook: ${active.facebookUrl.trim()}`);
-  if (active.instagramUrl.trim()) lines.push(`Instagram: ${active.instagramUrl.trim()}`);
-  if (active.youtubeUrl.trim()) lines.push(`YouTube: ${active.youtubeUrl.trim()}`);
-  if (active.linkedinUrl.trim()) lines.push(`LinkedIn: ${active.linkedinUrl.trim()}`);
-  if (active.tiktokUrl.trim()) lines.push(`TikTok: ${active.tiktokUrl.trim()}`);
-  if (active.xUrl.trim()) lines.push(`X: ${active.xUrl.trim()}`);
-  if (active.alibabaUrl.trim()) lines.push(`Alibaba: ${active.alibabaUrl.trim()}`);
-  if (active.telegramUrl.trim()) lines.push(`Telegram: ${active.telegramUrl.trim()}`);
-  if (active.wechatId.trim()) lines.push(`WeChat ID: ${active.wechatId.trim()}`);
-  if (active.websiteExtraUrl.trim()) {
-    const label = active.websiteExtraLabel.trim() || 'Website';
-    lines.push(`${label}: ${active.websiteExtraUrl.trim()}`);
-  }
+  active.whatsappNumbers.forEach((num, idx) => {
+    if (num.trim()) {
+      const waUrl = resolveWhatsAppChatUrl(num);
+      lines.push(`WhatsApp ${idx + 1}: ${num.trim()}${waUrl ? ` (${waUrl})` : ''}`);
+    }
+  });
+  active.businessWhatsapps.forEach((num, idx) => {
+    if (num.trim()) {
+      const bwaUrl = resolveWhatsAppChatUrl(num);
+      lines.push(
+        `Business WhatsApp ${idx + 1}: ${num.trim()}${
+          bwaUrl && bwaUrl !== num.trim() ? ` (${bwaUrl})` : ''
+        }`
+      );
+    }
+  });
+  active.facebookUrls.forEach((url, idx) => { if (url.trim()) lines.push(`Facebook ${idx + 1}: ${url.trim()}`); });
+  active.instagramUrls.forEach((url, idx) => { if (url.trim()) lines.push(`Instagram ${idx + 1}: ${url.trim()}`); });
+  active.youtubeUrls.forEach((url, idx) => { if (url.trim()) lines.push(`YouTube ${idx + 1}: ${url.trim()}`); });
+  active.linkedinUrls.forEach((url, idx) => { if (url.trim()) lines.push(`LinkedIn ${idx + 1}: ${url.trim()}`); });
+  active.tiktokUrls.forEach((url, idx) => { if (url.trim()) lines.push(`TikTok ${idx + 1}: ${url.trim()}`); });
+  active.xUrls.forEach((url, idx) => { if (url.trim()) lines.push(`X ${idx + 1}: ${url.trim()}`); });
+  active.alibabaUrls.forEach((url, idx) => { if (url.trim()) lines.push(`Alibaba ${idx + 1}: ${url.trim()}`); });
+  active.telegramUrls.forEach((url, idx) => { if (url.trim()) lines.push(`Telegram ${idx + 1}: ${url.trim()}`); });
+  active.wechatIds.forEach((id, idx) => { if (id.trim()) lines.push(`WeChat ID ${idx + 1}: ${id.trim()}`); });
+  active.websiteExtraUrls.forEach((url, idx) => {
+    if (url.trim()) {
+      const label = active.websiteExtraLabels[idx]?.trim() || `Website ${idx + 1}`;
+      lines.push(`${label}: ${url.trim()}`);
+    }
+  });
   return lines.join('\n');
 }
 
@@ -1158,9 +1193,31 @@ export function subscribePublicSocialSettings(
         onData(null);
         return;
       }
+      const data = officialDoc.data() as any;
+      const normalizedData = {
+        facebookUrls: ensureArrayLength5(data.facebookUrls, data.facebookUrl),
+        instagramUrls: ensureArrayLength5(data.instagramUrls, data.instagramUrl),
+        youtubeUrls: ensureArrayLength5(data.youtubeUrls, data.youtubeUrl),
+        linkedinUrls: ensureArrayLength5(data.linkedinUrls, data.linkedinUrl),
+        tiktokUrls: ensureArrayLength5(data.tiktokUrls, data.tiktokUrl),
+        xUrls: ensureArrayLength5(data.xUrls, data.xUrl),
+        alibabaUrls: ensureArrayLength5(data.alibabaUrls, data.alibabaUrl),
+        telegramUrls: ensureArrayLength5(data.telegramUrls, data.telegramUrl),
+        websiteExtraUrls: ensureArrayLength5(data.websiteExtraUrls, data.websiteExtraUrl),
+        websiteExtraLabels: ensureArrayLength5(data.websiteExtraLabels, data.websiteExtraLabel),
+        wechatIds: ensureArrayLength5(data.wechatIds, data.wechatId),
+        whatsappNumbers: ensureArrayLength5(data.whatsappNumbers, data.whatsappNumber || '+86 137 5705 0848'),
+        businessWhatsapps: ensureArrayLength5(data.businessWhatsapps, data.businessWhatsapp),
+        signatureHeading: data.signatureHeading || DEFAULT_SOCIAL_SETTING.signatureHeading,
+        showOnProducts: data.showOnProducts ?? true,
+        showOnBlogPosts: data.showOnBlogPosts ?? true,
+        enableShareButtons: data.enableShareButtons ?? true,
+        isPublic: true,
+        authorUid: data.authorUid || '',
+      };
       onData({
         id: 'official',
-        ...(officialDoc.data() as Omit<CmsSocialSettingDoc, 'id'>),
+        ...normalizedData,
       });
     },
     (error) => {
@@ -1179,28 +1236,30 @@ export async function saveSocialSetting(input: CmsSocialSettingInput): Promise<v
     throw new Error('Unauthorized: Admin sign-in required.');
   }
 
-  const cleanBusinessWa = input.businessWhatsapp.trim();
-  const normalizedBusinessWa =
-    cleanBusinessWa.startsWith('http://')
-      ? `https://${cleanBusinessWa.slice(7)}`.slice(0, 300)
-      : cleanBusinessWa.startsWith('wa.me/')
-        ? `https://${cleanBusinessWa}`.slice(0, 300)
-        : clampStr(cleanBusinessWa, 300);
+  const cleanArr = (arr?: string[], maxLen = 300) => ensureArrayLength5(arr).map(s => s.trim().slice(0, maxLen));
+  const cleanUrlArr = (arr?: string[], prefix?: string) => ensureArrayLength5(arr).map(s => normalizeHttpsSocialUrl(s, prefix));
+  const cleanWaArr = (arr?: string[]) => ensureArrayLength5(arr).map(s => {
+    const clean = s.trim();
+    if (!clean) return '';
+    if (clean.startsWith('http://')) return `https://${clean.slice(7)}`.slice(0, 300);
+    if (clean.startsWith('wa.me/')) return `https://${clean}`.slice(0, 300);
+    return clampStr(clean, 300);
+  });
 
   const mutablePayload = {
-    facebookUrl: normalizeHttpsSocialUrl(input.facebookUrl, 'https://facebook.com/'),
-    instagramUrl: normalizeHttpsSocialUrl(input.instagramUrl, 'https://instagram.com/'),
-    youtubeUrl: normalizeHttpsSocialUrl(input.youtubeUrl, 'https://youtube.com/@'),
-    linkedinUrl: normalizeHttpsSocialUrl(input.linkedinUrl, 'https://linkedin.com/in/'),
-    tiktokUrl: normalizeHttpsSocialUrl(input.tiktokUrl, 'https://tiktok.com/@'),
-    xUrl: normalizeHttpsSocialUrl(input.xUrl, 'https://x.com/'),
-    alibabaUrl: normalizeHttpsSocialUrl(input.alibabaUrl),
-    telegramUrl: normalizeHttpsSocialUrl(input.telegramUrl, 'https://t.me/'),
-    websiteExtraUrl: normalizeHttpsSocialUrl(input.websiteExtraUrl),
-    websiteExtraLabel: clampStr(input.websiteExtraLabel, 60),
-    wechatId: clampStr(input.wechatId, 120),
-    whatsappNumber: clampStr(input.whatsappNumber, 60),
-    businessWhatsapp: normalizedBusinessWa,
+    facebookUrls: cleanUrlArr(input.facebookUrls, 'https://facebook.com/'),
+    instagramUrls: cleanUrlArr(input.instagramUrls, 'https://instagram.com/'),
+    youtubeUrls: cleanUrlArr(input.youtubeUrls, 'https://youtube.com/@'),
+    linkedinUrls: cleanUrlArr(input.linkedinUrls, 'https://linkedin.com/in/'),
+    tiktokUrls: cleanUrlArr(input.tiktokUrls, 'https://tiktok.com/@'),
+    xUrls: cleanUrlArr(input.xUrls, 'https://x.com/'),
+    alibabaUrls: cleanUrlArr(input.alibabaUrls),
+    telegramUrls: cleanUrlArr(input.telegramUrls, 'https://t.me/'),
+    websiteExtraUrls: cleanUrlArr(input.websiteExtraUrls),
+    websiteExtraLabels: cleanArr(input.websiteExtraLabels, 60),
+    wechatIds: cleanArr(input.wechatIds, 120),
+    whatsappNumbers: cleanArr(input.whatsappNumbers, 60),
+    businessWhatsapps: cleanWaArr(input.businessWhatsapps),
     signatureHeading: clampStr(input.signatureHeading, 140) || DEFAULT_SOCIAL_SETTING.signatureHeading,
     showOnProducts: Boolean(input.showOnProducts),
     showOnBlogPosts: Boolean(input.showOnBlogPosts),
@@ -1208,32 +1267,33 @@ export async function saveSocialSetting(input: CmsSocialSettingInput): Promise<v
     isPublic: true,
   };
 
-  const urlFields: [string, string][] = [
-    ['Facebook URL', input.facebookUrl],
-    ['Instagram URL', input.instagramUrl],
-    ['YouTube URL', input.youtubeUrl],
-    ['LinkedIn URL', input.linkedinUrl],
-    ['TikTok URL', input.tiktokUrl],
-    ['X / Twitter URL', input.xUrl],
-    ['Alibaba URL', input.alibabaUrl],
-    ['Telegram URL', input.telegramUrl],
-    ['Custom Link URL', input.websiteExtraUrl],
+  const facebookClean = ensureArrayLength5(input.facebookUrls);
+  const instagramClean = ensureArrayLength5(input.instagramUrls);
+  const youtubeClean = ensureArrayLength5(input.youtubeUrls);
+  const linkedinClean = ensureArrayLength5(input.linkedinUrls);
+  const tiktokClean = ensureArrayLength5(input.tiktokUrls);
+  const xClean = ensureArrayLength5(input.xUrls);
+  const alibabaClean = ensureArrayLength5(input.alibabaUrls);
+  const telegramClean = ensureArrayLength5(input.telegramUrls);
+  const extraClean = ensureArrayLength5(input.websiteExtraUrls);
+
+  const urlChecks = [
+    { label: 'Facebook URL', raws: facebookClean, norm: mutablePayload.facebookUrls },
+    { label: 'Instagram URL', raws: instagramClean, norm: mutablePayload.instagramUrls },
+    { label: 'YouTube URL', raws: youtubeClean, norm: mutablePayload.youtubeUrls },
+    { label: 'LinkedIn URL', raws: linkedinClean, norm: mutablePayload.linkedinUrls },
+    { label: 'TikTok URL', raws: tiktokClean, norm: mutablePayload.tiktokUrls },
+    { label: 'X / Twitter URL', raws: xClean, norm: mutablePayload.xUrls },
+    { label: 'Alibaba URL', raws: alibabaClean, norm: mutablePayload.alibabaUrls },
+    { label: 'Telegram URL', raws: telegramClean, norm: mutablePayload.telegramUrls },
+    { label: 'Custom Link URL', raws: extraClean, norm: mutablePayload.websiteExtraUrls },
   ];
-  const mappedValues = [
-    mutablePayload.facebookUrl,
-    mutablePayload.instagramUrl,
-    mutablePayload.youtubeUrl,
-    mutablePayload.linkedinUrl,
-    mutablePayload.tiktokUrl,
-    mutablePayload.xUrl,
-    mutablePayload.alibabaUrl,
-    mutablePayload.telegramUrl,
-    mutablePayload.websiteExtraUrl,
-  ];
-  for (let i = 0; i < urlFields.length; i += 1) {
-    const [label, rawVal] = urlFields[i];
-    if (rawVal.trim() && !mappedValues[i]) {
-      throw new Error(`${label} must be a valid https:// URL (e.g. https://...).`);
+
+  for (const group of urlChecks) {
+    for (let i = 0; i < group.raws.length; i++) {
+      if (group.raws[i].trim() && !group.norm[i]) {
+        throw new Error(`${group.label} #${i + 1} must be a valid https:// URL (e.g. https://...).`);
+      }
     }
   }
 

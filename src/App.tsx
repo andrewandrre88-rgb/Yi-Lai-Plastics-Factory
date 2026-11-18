@@ -39,6 +39,7 @@ import { BLOG_POSTS, type BlogPost } from './data/blogPosts';
 import { type UseCaseItem } from './data/useCases';
 import { LANG_LABELS, TRANSLATIONS, type LangCode } from './i18n/translations';
 import {
+  ensureArrayLength5,
   isAuthorizedAdmin,
   resolveWhatsAppChatUrl,
   subscribeAuthState,
@@ -263,6 +264,21 @@ export default function App() {
   const [seoSettings, setSeoSettings] = useState<Record<string, CmsSeoSettingDoc>>({});
   const [catalogConfig, setCatalogConfig] = useState<CmsCatalogConfigDoc | null>(null);
   const [socialSettings, setSocialSettings] = useState<CmsSocialSettingDoc | null>(null);
+
+  const rawSocial = socialSettings as any;
+  const whatsappNums = ensureArrayLength5(rawSocial?.whatsappNumbers, rawSocial?.whatsappNumber);
+  const businessWaNums = ensureArrayLength5(rawSocial?.businessWhatsapps, rawSocial?.businessWhatsapp);
+  const wechatIds = ensureArrayLength5(rawSocial?.wechatIds, rawSocial?.wechatId);
+  const linkedinUrls = ensureArrayLength5(rawSocial?.linkedinUrls, rawSocial?.linkedinUrl);
+  const alibabaUrls = ensureArrayLength5(rawSocial?.alibabaUrls, rawSocial?.alibabaUrl);
+  const facebookUrls = ensureArrayLength5(rawSocial?.facebookUrls, rawSocial?.facebookUrl);
+  const instagramUrls = ensureArrayLength5(rawSocial?.instagramUrls, rawSocial?.instagramUrl);
+  const tiktokUrls = ensureArrayLength5(rawSocial?.tiktokUrls, rawSocial?.tiktokUrl);
+  const youtubeUrls = ensureArrayLength5(rawSocial?.youtubeUrls, rawSocial?.youtubeUrl);
+  const xUrls = ensureArrayLength5(rawSocial?.xUrls, rawSocial?.xUrl);
+  const telegramUrls = ensureArrayLength5(rawSocial?.telegramUrls, rawSocial?.telegramUrl);
+  const websiteExtraUrls = ensureArrayLength5(rawSocial?.websiteExtraUrls, rawSocial?.websiteExtraUrl);
+  const websiteExtraLabels = ensureArrayLength5(rawSocial?.websiteExtraLabels, rawSocial?.websiteExtraLabel);
 
   // Quote form state
   const [product, setProduct] = useState('');
@@ -719,7 +735,7 @@ export default function App() {
     const body = lines.join('\n');
     const subject = `Inquiry: ${selectedLabel} (${neckLabel})`;
     const mailto = `mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    const activeWaNumber = socialSettings?.whatsappNumber?.trim() || FACTORY_PHONE;
+    const activeWaNumber = whatsappNums.find((n: string) => n.trim()) || FACTORY_PHONE;
     const whatsappUrl =
       resolveWhatsAppChatUrl(activeWaNumber, `${subject}\n\n${body}`) ||
       `${FACTORY_WHATSAPP_URL}?text=${encodeURIComponent(`${subject}\n\n${body}`)}`;
@@ -1714,41 +1730,45 @@ export default function App() {
                 <p className="text-[15px] text-[var(--muted)] leading-relaxed mb-4 flex-1">
                   {t('social.waDesc')}
                 </p>
-                <div className="pt-3.5 border-t border-[var(--line)] flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-mono-spec text-xs text-[var(--ink)]" dir="ltr">
-                    {socialSettings?.whatsappNumber?.trim() || FACTORY_PHONE}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <a
-                      href={
-                        resolveWhatsAppChatUrl(
-                          socialSettings?.whatsappNumber?.trim() || FACTORY_PHONE
-                        ) || FACTORY_WHATSAPP_URL
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 font-mono-spec text-xs uppercase tracking-wider bg-[var(--blue)] text-[var(--btn-ink)] px-3 py-1.5 rounded-[4px] transition-transform hover:-translate-y-px whitespace-nowrap"
-                    >
-                      <span>{t('social.waCta')}</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-                    </a>
-                    {socialSettings?.businessWhatsapp?.trim() &&
-                      resolveWhatsAppChatUrl(socialSettings.businessWhatsapp) && (
-                        <a
-                          href={resolveWhatsAppChatUrl(socialSettings.businessWhatsapp)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase tracking-wider border border-[#25D366] text-[var(--ink)] hover:text-[#25D366] px-2.5 py-1.5 rounded-[4px] whitespace-nowrap"
-                        >
-                          <span>Business WA</span>
-                          <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      )}
-                  </div>
+                <div className="pt-3.5 border-t border-[var(--line)] space-y-2">
+                  {whatsappNums.filter((n: string) => n.trim()).map((num: string, idx: number) => (
+                    <div key={`wa-${idx}`} className="flex items-center justify-between gap-2 text-xs font-mono-spec">
+                      <span className="text-[var(--ink)] truncate" dir="ltr">{num.trim()}</span>
+                      <a
+                        href={resolveWhatsAppChatUrl(num) || FACTORY_WHATSAPP_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 bg-[var(--blue)] text-[var(--btn-ink)] px-2.5 py-1 rounded-[4px] whitespace-nowrap"
+                      >
+                        <span>WA {idx + 1}</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    </div>
+                  ))}
+                  {businessWaNums.filter((n: string) => n.trim()).map((num: string, idx: number) => (
+                    <div key={`bwa-${idx}`} className="flex items-center justify-between gap-2 text-xs font-mono-spec">
+                      <span className="text-[var(--ink)] truncate" dir="ltr">Biz {idx + 1}: {num.trim()}</span>
+                      <a
+                        href={resolveWhatsAppChatUrl(num) || FACTORY_WHATSAPP_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 border border-[#25D366] text-[#25D366] px-2.5 py-1 rounded-[4px] whitespace-nowrap"
+                      >
+                        <span>Chat</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    </div>
+                  ))}
+                  {whatsappNums.every((n: string) => !n.trim()) && businessWaNums.every((n: string) => !n.trim()) && (
+                    <div className="flex items-center justify-between">
+                      <ToConfirmTag />
+                      <span className="text-xs font-mono-spec text-[var(--muted)]" dir="ltr">{FACTORY_PHONE}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* CH 06.2: WeChat */}
+              {/* CH 06.2: WeChat & Telegram */}
               <div className="yl-product-card border-r border-b border-[var(--line)] p-6 flex flex-col">
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <span className="font-mono-spec text-[11px] uppercase tracking-[0.1em] text-[var(--muted)]" dir="ltr">
@@ -1762,21 +1782,35 @@ export default function App() {
                 <p className="text-[15px] text-[var(--muted)] leading-relaxed mb-4 flex-1">
                   {t('social.wcDesc')}
                 </p>
-                <div className="pt-3.5 border-t border-dashed border-[var(--line)] flex items-center justify-between gap-3">
-                  {socialSettings?.wechatId?.trim() ? (
-                    <span className="font-mono-spec text-xs font-medium text-[var(--ink)]" dir="ltr">
-                      ID: {socialSettings.wechatId.trim()}
-                    </span>
-                  ) : (
+                <div className="pt-3.5 border-t border-dashed border-[var(--line)] space-y-2 text-xs font-mono-spec">
+                  {wechatIds.filter((id: string) => id.trim()).map((id: string, idx: number) => (
+                    <div key={`wc-${idx}`} className="flex items-center justify-between gap-2">
+                      <span className="text-[var(--ink)] truncate" dir="ltr">WeChat {idx + 1}: {id.trim()}</span>
+                      <a
+                        href={`mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent(`WeChat ${idx + 1} Request — Yi Lai Plastics`)}`}
+                        className="text-[var(--blue)] hover:underline whitespace-nowrap"
+                      >
+                        Email
+                      </a>
+                    </div>
+                  ))}
+                  {telegramUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                    <div key={`tg-${idx}`} className="flex items-center justify-between gap-2">
+                      <span className="text-[var(--ink)] truncate" dir="ltr">Telegram {idx + 1}</span>
+                      <a
+                        href={u.trim().startsWith('http') ? u.trim() : `https://t.me/${u.trim().replace(/^@/, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[var(--blue)] underline whitespace-nowrap"
+                      >
+                        <span>Open</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    </div>
+                  ))}
+                  {wechatIds.every((id: string) => !id.trim()) && telegramUrls.every((u: string) => !u.trim()) && (
                     <ToConfirmTag />
                   )}
-                  <a
-                    href={`mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent('WeChat ID Request — Yi Lai Plastics')}`}
-                    className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)]"
-                  >
-                    <span>{t('social.emailFallback')}</span>
-                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
-                  </a>
                 </div>
               </div>
 
@@ -1794,28 +1828,24 @@ export default function App() {
                 <p className="text-[15px] text-[var(--muted)] leading-relaxed mb-4 flex-1">
                   {t('social.liDesc')}
                 </p>
-                <div className="pt-3.5 border-t border-dashed border-[var(--line)] flex items-center justify-between gap-3">
-                  {socialSettings?.linkedinUrl ? (
-                    <a
-                      href={socialSettings.linkedinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 font-mono-spec text-xs uppercase tracking-wider bg-[var(--blue)] text-[var(--btn-ink)] px-3 py-1.5 rounded-[4px]"
-                    >
-                      <span>LinkedIn</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-                    </a>
+                <div className="pt-3.5 border-t border-dashed border-[var(--line)] space-y-2">
+                  {linkedinUrls.filter((u: string) => u.trim()).length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {linkedinUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                        <a
+                          key={`li-${idx}`}
+                          href={u.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2.5 py-1 rounded-[4px]"
+                        >
+                          <span>LinkedIn {idx + 1}</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </a>
+                      ))}
+                    </div>
                   ) : (
-                    <>
-                      <ToConfirmTag />
-                      <a
-                        href={`mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent('LinkedIn Profile Request — Yi Lai Plastics')}`}
-                        className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)]"
-                      >
-                        <span>{t('social.emailFallback')}</span>
-                        <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
-                      </a>
-                    </>
+                    <ToConfirmTag />
                   )}
                 </div>
               </div>
@@ -1834,28 +1864,24 @@ export default function App() {
                 <p className="text-[15px] text-[var(--muted)] leading-relaxed mb-4 flex-1">
                   {t('social.aliDesc')}
                 </p>
-                <div className="pt-3.5 border-t border-dashed border-[var(--line)] flex items-center justify-between gap-3">
-                  {socialSettings?.alibabaUrl ? (
-                    <a
-                      href={socialSettings.alibabaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 font-mono-spec text-xs uppercase tracking-wider bg-[var(--blue)] text-[var(--btn-ink)] px-3 py-1.5 rounded-[4px]"
-                    >
-                      <span>Visit Store</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
-                    </a>
+                <div className="pt-3.5 border-t border-dashed border-[var(--line)] space-y-2">
+                  {alibabaUrls.filter((u: string) => u.trim()).length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {alibabaUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                        <a
+                          key={`ali-${idx}`}
+                          href={u.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2.5 py-1 rounded-[4px]"
+                        >
+                          <span>Alibaba {idx + 1}</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </a>
+                      ))}
+                    </div>
                   ) : (
-                    <>
-                      <ToConfirmTag />
-                      <a
-                        href={`mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent('Alibaba Storefront Link Request — Yi Lai Plastics')}`}
-                        className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)]"
-                      >
-                        <span>{t('social.emailFallback')}</span>
-                        <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
-                      </a>
-                    </>
+                    <ToConfirmTag />
                   )}
                 </div>
               </div>
@@ -1874,61 +1900,34 @@ export default function App() {
                 <p className="text-[15px] text-[var(--muted)] leading-relaxed mb-4 flex-1">
                   {t('social.igDesc')}
                 </p>
-                <div className="pt-3.5 border-t border-dashed border-[var(--line)] flex flex-wrap items-center justify-between gap-2">
-                  {socialSettings?.instagramUrl ||
-                  socialSettings?.facebookUrl ||
-                  socialSettings?.tiktokUrl ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {socialSettings.facebookUrl && (
-                        <a
-                          href={socialSettings.facebookUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2.5 py-1 rounded-[4px]"
-                        >
-                          <span>Facebook</span>
-                          <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      )}
-                      {socialSettings.instagramUrl && (
-                        <a
-                          href={socialSettings.instagramUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2.5 py-1 rounded-[4px]"
-                        >
-                          <span>Instagram</span>
-                          <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      )}
-                      {socialSettings.tiktokUrl && (
-                        <a
-                          href={socialSettings.tiktokUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase border border-[var(--blue)] text-[var(--blue)] px-2.5 py-1 rounded-[4px]"
-                        >
-                          <span>TikTok</span>
-                          <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <ToConfirmTag />
-                      <a
-                        href={`mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent('Social Media Handle Request — Yi Lai Plastics')}`}
-                        className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)]"
-                      >
-                        <span>{t('social.emailFallback')}</span>
-                        <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
+                <div className="pt-3.5 border-t border-dashed border-[var(--line)] space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {facebookUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`fb-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2 py-1 rounded-[4px]">
+                        <span>FB {idx + 1}</span>
+                        <ArrowUpRight className="w-3 h-3" />
                       </a>
-                    </>
+                    ))}
+                    {instagramUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`ig-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2 py-1 rounded-[4px]">
+                        <span>IG {idx + 1}</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    ))}
+                    {tiktokUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`tt-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase border border-[var(--blue)] text-[var(--blue)] px-2 py-1 rounded-[4px]">
+                        <span>TikTok {idx + 1}</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    ))}
+                  </div>
+                  {facebookUrls.every((u: string) => !u.trim()) && instagramUrls.every((u: string) => !u.trim()) && tiktokUrls.every((u: string) => !u.trim()) && (
+                    <ToConfirmTag />
                   )}
                 </div>
               </div>
 
-              {/* CH 06.6: YouTube & X */}
+              {/* CH 06.6: YouTube, X & Custom Extra Links */}
               <div className="yl-product-card border-r border-b border-[var(--line)] p-6 flex flex-col">
                 <div className="flex items-center justify-between gap-2 mb-4">
                   <span className="font-mono-spec text-[11px] uppercase tracking-[0.1em] text-[var(--muted)]" dir="ltr">
@@ -1942,43 +1941,32 @@ export default function App() {
                 <p className="text-[15px] text-[var(--muted)] leading-relaxed mb-4 flex-1">
                   {t('social.ytDesc')}
                 </p>
-                <div className="pt-3.5 border-t border-dashed border-[var(--line)] flex flex-wrap items-center justify-between gap-2">
-                  {socialSettings?.youtubeUrl || socialSettings?.xUrl ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {socialSettings.youtubeUrl && (
-                        <a
-                          href={socialSettings.youtubeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2.5 py-1 rounded-[4px]"
-                        >
-                          <span>YouTube</span>
-                          <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      )}
-                      {socialSettings.xUrl && (
-                        <a
-                          href={socialSettings.xUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono-spec text-xs uppercase border border-[var(--blue)] text-[var(--blue)] px-2.5 py-1 rounded-[4px]"
-                        >
-                          <span>X</span>
-                          <ArrowUpRight className="w-3 h-3" aria-hidden="true" />
-                        </a>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <ToConfirmTag />
-                      <a
-                        href={`mailto:${FACTORY_EMAIL}?subject=${encodeURIComponent('YouTube Channel Request — Yi Lai Plastics')}`}
-                        className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase text-[var(--blue)] hover:text-[var(--red)]"
-                      >
-                        <span>{t('social.emailFallback')}</span>
-                        <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
+                <div className="pt-3.5 border-t border-dashed border-[var(--line)] space-y-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    {youtubeUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`yt-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase bg-[var(--blue)] text-[var(--btn-ink)] px-2 py-1 rounded-[4px]">
+                        <span>YT {idx + 1}</span>
+                        <ArrowUpRight className="w-3 h-3" />
                       </a>
-                    </>
+                    ))}
+                    {xUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`x-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase border border-[var(--blue)] text-[var(--blue)] px-2 py-1 rounded-[4px]">
+                        <span>X {idx + 1}</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </a>
+                    ))}
+                    {websiteExtraUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => {
+                      const lbl = websiteExtraLabels[idx]?.trim() || `Link ${idx + 1}`;
+                      return (
+                        <a key={`extra-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono-spec text-[11px] uppercase border border-[var(--line)] bg-[var(--surface)] text-[var(--ink)] px-2 py-1 rounded-[4px]">
+                          <span>{lbl}</span>
+                          <ArrowUpRight className="w-3 h-3" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                  {youtubeUrls.every((u: string) => !u.trim()) && xUrls.every((u: string) => !u.trim()) && websiteExtraUrls.every((u: string) => !u.trim()) && (
+                    <ToConfirmTag />
                   )}
                 </div>
               </div>
@@ -2345,7 +2333,7 @@ export default function App() {
                 <a
                   href={
                     resolveWhatsAppChatUrl(
-                      socialSettings?.whatsappNumber?.trim() || FACTORY_PHONE
+                      whatsappNums.find((n: string) => n.trim()) || FACTORY_PHONE
                     ) || FACTORY_WHATSAPP_URL
                   }
                   target="_blank"
@@ -2356,20 +2344,22 @@ export default function App() {
                   <svg className="w-4 h-4 text-[#25D366] shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm5.82 14.07c-.24.68-1.41 1.3-1.95 1.38-.52.08-1.18.11-1.9-.12-.44-.14-1-.33-1.71-.64-3.01-1.3-4.97-4.33-5.12-4.53-.15-.2-1.22-1.62-1.22-3.09s.77-2.2 1.05-2.5c.28-.3.6-.38.8-.38.2 0 .4 0 .58.01.18.01.43-.07.67.51.24.6.84 2.06.92 2.21.08.15.13.33.03.53-.1.2-.15.33-.3.51-.15.18-.32.4-.45.53-.15.15-.31.31-.13.61.18.3.79 1.3 1.7 2.11 1.17 1.04 2.15 1.36 2.45 1.51.3.15.48.13.66-.08.18-.2.75-.88.95-1.18.2-.3.4-.25.67-.15.28.1 1.75.83 2.05.98.3.15.5.22.58.35.07.12.07.72-.17 1.4z" />
                   </svg>
-                  <span>WhatsApp: {socialSettings?.whatsappNumber?.trim() || FACTORY_PHONE}</span>
+                  <span>WhatsApp: {whatsappNums.find((n: string) => n.trim()) || FACTORY_PHONE}</span>
                 </a>
-                {socialSettings?.businessWhatsapp?.trim() &&
-                  resolveWhatsAppChatUrl(socialSettings.businessWhatsapp) && (
+                {businessWaNums.filter((n: string) => n.trim()).map((bwa: string, idx: number) => (
+                  resolveWhatsAppChatUrl(bwa) && (
                     <a
-                      href={resolveWhatsAppChatUrl(socialSettings.businessWhatsapp)}
+                      key={`foot-bwa-${idx}`}
+                      href={resolveWhatsAppChatUrl(bwa)}
                       target="_blank"
                       rel="noopener noreferrer"
                       dir="ltr"
                       className="block text-xs font-mono-spec text-[#25D366] hover:underline"
                     >
-                      Business WhatsApp ↗
+                      Business WhatsApp {idx + 1} ↗
                     </a>
-                  )}
+                  )
+                ))}
               </div>
             </div>
 
@@ -2384,85 +2374,49 @@ export default function App() {
                   iconClassName="w-3.5 h-3.5 shrink-0"
                   className="inline-flex items-center gap-1.5 text-[var(--blue)] font-medium hover:underline"
                 />
-                {socialSettings &&
-                (socialSettings.facebookUrl ||
-                  socialSettings.instagramUrl ||
-                  socialSettings.youtubeUrl ||
-                  socialSettings.linkedinUrl ||
-                  socialSettings.tiktokUrl ||
-                  socialSettings.xUrl ||
-                  socialSettings.alibabaUrl) ? (
+                 {(facebookUrls.some((u: string) => u.trim()) ||
+                  instagramUrls.some((u: string) => u.trim()) ||
+                  youtubeUrls.some((u: string) => u.trim()) ||
+                  linkedinUrls.some((u: string) => u.trim()) ||
+                  tiktokUrls.some((u: string) => u.trim()) ||
+                  xUrls.some((u: string) => u.trim()) ||
+                  alibabaUrls.some((u: string) => u.trim())) ? (
                   <div className="flex flex-wrap items-center gap-2 pt-1 font-mono-spec text-[11px]">
-                    {socialSettings.facebookUrl && (
-                      <a
-                        href={socialSettings.facebookUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        FB
+                    {facebookUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`fbf-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        FB {idx + 1}
                       </a>
-                    )}
-                    {socialSettings.instagramUrl && (
-                      <a
-                        href={socialSettings.instagramUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        IG
+                    ))}
+                    {instagramUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`igf-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        IG {idx + 1}
                       </a>
-                    )}
-                    {socialSettings.youtubeUrl && (
-                      <a
-                        href={socialSettings.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        YT
+                    ))}
+                    {youtubeUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`ytf-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        YT {idx + 1}
                       </a>
-                    )}
-                    {socialSettings.linkedinUrl && (
-                      <a
-                        href={socialSettings.linkedinUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        LinkedIn
+                    ))}
+                    {linkedinUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`lif-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        LinkedIn {idx + 1}
                       </a>
-                    )}
-                    {socialSettings.tiktokUrl && (
-                      <a
-                        href={socialSettings.tiktokUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        TikTok
+                    ))}
+                    {tiktokUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`ttf-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        TikTok {idx + 1}
                       </a>
-                    )}
-                    {socialSettings.xUrl && (
-                      <a
-                        href={socialSettings.xUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        X
+                    ))}
+                    {xUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`xf-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        X {idx + 1}
                       </a>
-                    )}
-                    {socialSettings.alibabaUrl && (
-                      <a
-                        href={socialSettings.alibabaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[var(--ink)] hover:text-[var(--blue)] underline"
-                      >
-                        Alibaba
+                    ))}
+                    {alibabaUrls.filter((u: string) => u.trim()).map((u: string, idx: number) => (
+                      <a key={`alif-${idx}`} href={u.trim()} target="_blank" rel="noopener noreferrer" className="text-[var(--ink)] hover:text-[var(--blue)] underline">
+                        Alibaba {idx + 1}
                       </a>
-                    )}
+                    ))}
                   </div>
                 ) : (
                   <div className="text-xs text-[var(--muted)] flex flex-wrap items-center gap-2">
@@ -2499,16 +2453,16 @@ export default function App() {
         <a
           href={
             resolveWhatsAppChatUrl(
-              socialSettings?.whatsappNumber?.trim() ||
-                socialSettings?.businessWhatsapp?.trim() ||
+              whatsappNums.find((n: string) => n.trim()) ||
+                businessWaNums.find((n: string) => n.trim()) ||
                 FACTORY_PHONE
             ) || FACTORY_WHATSAPP_URL
           }
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Chat with Yi Lai Plastics on WhatsApp"
-          title={`WhatsApp: ${socialSettings?.whatsappNumber?.trim() || FACTORY_PHONE}`}
-          className="fixed bottom-5 end-5 z-40 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1ebe5d] text-white shadow-lg flex items-center justify-center hover:-translate-y-0.5 active:translate-y-0 transition-transform"
+          title={`WhatsApp: ${whatsappNums.find((n: string) => n.trim()) || FACTORY_PHONE}`}
+          className="fixed bottom-5 end-5 z-40 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1ebe5d] text-white shadow-lg flex items-center justify-center hover:-translate-y-0.5 active:translate-y-0 transition-transform animate-yl-float"
         >
           <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm5.82 14.07c-.24.68-1.41 1.3-1.95 1.38-.52.08-1.18.11-1.9-.12-.44-.14-1-.33-1.71-.64-3.01-1.3-4.97-4.33-5.12-4.53-.15-.2-1.22-1.62-1.22-3.09s.77-2.2 1.05-2.5c.28-.3.6-.38.8-.38.2 0 .4 0 .58.01.18.01.43-.07.67.51.24.6.84 2.06.92 2.21.08.15.13.33.03.53-.1.2-.15.33-.3.51-.15.18-.32.4-.45.53-.15.15-.31.31-.13.61.18.3.79 1.3 1.7 2.11 1.17 1.04 2.15 1.36 2.45 1.51.3.15.48.13.66-.08.18-.2.75-.88.95-1.18.2-.3.4-.25.67-.15.28.1 1.75.83 2.05.98.3.15.5.22.58.35.07.12.07.72-.17 1.4z" />
